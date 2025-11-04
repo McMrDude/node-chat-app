@@ -133,14 +133,8 @@ async function loadHistory() {
       roomId
     };
 
-    // optimistic UI: add message immediately
-    const now = new Date();
-    addMessageToDOM({
-      username,
-      color,
-      text,
-      time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    });
+    // send to server - server will save and broadcast
+    socket.emit("chat message", payload);
 
     input.value = "";
   });
