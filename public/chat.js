@@ -1,69 +1,55 @@
-// public/chat.js
-
 const socket = io();
-const params = new URLSearchParams(window.location.search);
-const roomId = params.get('roomId');
 
-if (!roomId) {
-  alert("No room specified.");
-  window.location.href = '/';
-}
+// Extract roomId from URL params
+const urlParams = new URLSearchParams(window.location.search);
+const roomId = urlParams.get("roomId");
 
-const usernameInput = document.getElementById("username");
-const colorInput = document.getElementById("color");
-const form = document.getElementById("form");
-const input = document.getElementById("input");
-const messages = document.getElementById("messages");
+// Ask for username and color
+const username = prompt("Enter your username:");
+const color = prompt("Pick a color for your name (e.g., red, blue):") || "black";
 
-// Join room on load
+// Join selected room
 socket.emit("joinRoom", roomId);
 
-// Helper to add message to chat
-function addMessageToDOM(msgData) {
-  const li = document.createElement("li");
+// Load previous messages
+async function loadMessages() {
+  const response = await fetch(`/api/messages/${roomId}`);
+  const data = await response.json();
 
-  const meta = document.createElement("span");
-  meta.textContent = `[${msgData.time}] `;
-
-  const name = document.createElement("strong");
-  name.textContent = msgData.username + ": ";
-  name.style.color = msgData.color;
-
-  const text = document.createElement("span");
-  text.textContent = msgData.text;
-
-  li.append(meta, name, text);
-  messages.appendChild(li);
-
-  messages.scrollTop = messages.scrollHeight;
+  if (data.success) {
+    data.messages.forEach((msg) => displayMessage(msg));
+  }
 }
 
-// Handle message form submission
-form.addEventListener("submit", (e) => {
+// Display a message in chat
+function displayMessage(msg) {
+  const chatBox = document.getElementById("chatBox");
+  const div = document.createElement("div");
+  div.innerHTML = `<strong style="color:${msg.color}">${msg.username}:</strong> ${msg.content}`;
+  chatBox.appendChild(div);
+}
+
+// Send message on form submit
+document.getElementById("messageForm").addEventListener("submit", (e) => {
   e.preventDefault();
 
-  const username = usernameInput.value.trim() || "Anonymous";
-  const color = colorInput.value || "#000000";
-  const text = input.value.trim();
-
-  if (!text) return;
-
-  const now = new Date();
-  const msgData = {
-    username,
-    color,
-    text,
-    roomId,
-    time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-  };
-
-  socket.emit("chat message", msgData); // Send to server
-
-  input.value = ""; // Clear input box
-  addMessageToDOM(msgData); // Add to self view
+  const message = document.getElementById("message").value;
+  if (message.trim() !== "") {
+    socket.emit("chatMessage", {
+      user_id: null, // replace with real user id once auth is added
+      room_id: roomId,
+      content: message,
+      username,
+      color,
+    });
+    document.getElementById("message").value = "";
+  }
 });
 
-// Receive messages from server
-socket.on("chat message", (msgData) => {
-  addMessageToDOM(msgData);
+// Listen for incoming messages
+socket.on("message", (msg) => {
+  displayMessage(msg);
 });
+
+// Load messages on page load
+loadMessages();
