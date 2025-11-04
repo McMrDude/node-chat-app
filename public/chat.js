@@ -1,55 +1,131 @@
+// public/chat.js
 const socket = io();
 
-// Extract roomId from URL params
-const urlParams = new URLSearchParams(window.location.search);
-const roomId = urlParams.get("roomId");
+// parse URL params
+const params = new URLSearchParams(window.location.search);
+let roomId = params.get("roomId");
+const invite = params.get("invite");
 
-// Ask for username and color
-const username = prompt("Enter your username:");
-const color = prompt("Pick a color for your name (e.g., red, blue):") || "black";
+const roomTitle = document.getElementById("roomTitle");
+const usernameInput = document.getElementById("username");
+const colorInput = document.getElementById("color");
+const messagesUL = document.getElementById("messages");
+const form = document.getElementById("form");
+const input = document.getElementById("input");
 
-// Join selected room
-socket.emit("joinRoom", roomId);
-
-// Load previous messages
-async function loadMessages() {
-  const response = await fetch(`/api/messages/${roomId}`);
-  const data = await response.json();
-
-  if (data.success) {
-    data.messages.forEach((msg) => displayMessage(msg));
+async function resolveInviteIfNeeded() {
+  if (!roomId && invite) {
+    try {
+      const res = await fetch(`/api/rooms/${encodeURIComponent(invite)}`);
+      const data = await res.json();
+      if (!data.success || !data.room) {
+        alert("Invalid invite link or room not found.");
+        window.location.href = "/";
+        return;
+      }
+      roomId = data.room.id;
+      // update URL for clarity
+      window.history.replaceState({}, "", `/chat.html?roomId=${roomId}`);
+    } catch (err) {
+      console.error("Failed to resolve invite:", err);
+      alert("Failed to resolve invite.");
+      window.location.href = "/";
+    }
   }
 }
 
-// Display a message in chat
-function displayMessage(msg) {
-  const chatBox = document.getElementById("chatBox");
-  const div = document.createElement("div");
-  div.innerHTML = `<strong style="color:${msg.color}">${msg.username}:</strong> ${msg.content}`;
-  chatBox.appendChild(div);
+function addMessageToDOM(msgData) {
+  const li = document.createElement("li");
+
+  const meta = document.createElement("span");
+  meta.textContent = `[${msgData.time}] `;
+
+  const name = document.createElement("strong");
+  name.textContent = msgData.username + ": ";
+  name.style.color = msgData.color || "#000000";
+
+  const text = document.createElement("span");
+  text.textContent = msgData.text || msgData.content || msgData;
+
+  li.append(meta, name, text);
+  messagesUL.appendChild(li);
+  messagesUL.scrollTop = messagesUL.scrollHeight;
 }
 
-// Send message on form submit
-document.getElementById("messageForm").addEventListener("submit", (e) => {
-  e.preventDefault();
+async function loadHistory() {
+  try {
+    const res = await fetch(`/api/messages/${roomId}`);
+    const data = await res.json();
+    if (!data.success) {
+      console.error("Failed to load history", data);
+      return;
+    }
+    messagesUL.innerHTML = "";
+    data.messages.forEach((m) => {
+      addMessageToDOM({
+        username: m.username,
+        color: m.color,
+        text: m.text,
+        time: m.time
+      });
+    });
+  } catch (err) {
+    console.error("Error fetching messages:", err);
+  }
+}
 
-  const message = document.getElementById("message").value;
-  if (message.trim() !== "") {
-    socket.emit("chatMessage", {
-      user_id: null, // replace with real user id once auth is added
-      room_id: roomId,
-      content: message,
+// join and wire up socket
+(async function init() {
+  await resolveInviteIfNeeded();
+
+  if (!roomId) {
+    alert("No room specified");
+    window.location.href = "/";
+    return;
+  }
+
+  roomTitle.textContent = `Chat Room #${roomId}`;
+
+  // load history from server
+  await loadHistory();
+
+  // join socket room
+  socket.emit("joinRoom", roomId);
+
+  // receive messages from server
+  socket.on("chat message", (msg) => {
+    // if the message came from ourselves, we already added it locally on send;
+    // but it's fine to show again (no dedupe)
+    addMessageToDOM(msg);
+  });
+
+  // form submit -> send message
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const username = usernameInput.value.trim() || "Anonymous";
+    const color = colorInput.value || "#000000";
+    const text = input.value.trim();
+    if (!text) return;
+
+    const payload = {
       username,
       color,
+      text,
+      roomId
+    };
+
+    // send to server - server will save and broadcast
+    socket.emit("chat message", payload);
+
+    // optimistic UI: add message immediately
+    const now = new Date();
+    addMessageToDOM({
+      username,
+      color,
+      text,
+      time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     });
-    document.getElementById("message").value = "";
-  }
-});
 
-// Listen for incoming messages
-socket.on("message", (msg) => {
-  displayMessage(msg);
-});
-
-// Load messages on page load
-loadMessages();
+    input.value = "";
+  });
+})();
