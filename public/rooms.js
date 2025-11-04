@@ -80,8 +80,35 @@ createBtn.addEventListener('click', async () => {
     });
 
     const room = await res.json();
-    if (room.is_private) {
-      alert(`Private room created. Share this link:\n${window.location.origin}/chat.html?invite=${room.invite_code}`);
+    if (result.is_private) {
+        const inviteModal = document.createElement('div');
+        inviteModal.style.position = 'fixed';
+        inviteModal.style.top = '50%';
+        inviteModal.style.left = '50%';
+        inviteModal.style.transform = 'translate(-50%, -50%)';
+        inviteModal.style.background = '#ffffff';
+        inviteModal.style.padding = '20px';
+        inviteModal.style.border = '1px solid #000';
+        inviteModal.style.zIndex = 9999;
+        inviteModal.innerHTML = `
+            <h3>Private Room Created</h3>
+            <p>Share this link:</p>
+            <input type="text" id="inviteLink" readonly value="${window.location.origin}/chat.html?roomId=${result.invite_code}" style="width: 100%; margin-bottom: 10px;" />
+            <button id="copyBtn">Copy Link</button>
+            <button id="closeBtn">Close</button>
+        `;
+        document.body.appendChild(inviteModal);
+
+        document.getElementById('copyBtn').onclick = () => {
+            const input = document.getElementById('inviteLink');
+            input.select();
+            document.execCommand('copy');
+            alert('Copied to clipboard!');
+        };
+
+        document.getElementById('closeBtn').onclick = () => {
+            inviteModal.remove();
+        };
     } else {
       window.location.href = `/chat.html?roomId=${room.id}`;
     }

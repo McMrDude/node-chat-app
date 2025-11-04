@@ -132,9 +132,11 @@ io.on("connection", (socket) => {
 
   socket.on("joinRoom", (roomId) => {
     socket.join(roomId);
+    console.log(`User joined room: ${roomId}`);
   });
 
   socket.on("chat message", (msgData) => {
+    console.log(`Message in room ${msgData.roomId}: ${msgData.text}`);
     io.to(msgData.roomId).emit("chat message", msgData);
   });
 

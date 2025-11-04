@@ -1,21 +1,29 @@
-const socket = io();
-const urlParams = new URLSearchParams(window.location.search);
-let roomId = urlParams.get("roomId");
-const invite = urlParams.get("invite");
+// public/chat.js
 
-const roomTitle = document.getElementById("roomTitle");
-const messages = document.getElementById("messages");
-const form = document.getElementById("form");
-const input = document.getElementById("input");
+const socket = io();
+const params = new URLSearchParams(window.location.search);
+const roomId = params.get('roomId');
+
+if (!roomId) {
+  alert("No room specified.");
+  window.location.href = '/';
+}
+
 const usernameInput = document.getElementById("username");
 const colorInput = document.getElementById("color");
+const form = document.getElementById("form");
+const input = document.getElementById("input");
+const messages = document.getElementById("messages");
 
-// Helper to add a message to the DOM
-function addMessage(msgData) {
+// Join room on load
+socket.emit("joinRoom", roomId);
+
+// Helper to add message to chat
+function addMessageToDOM(msgData) {
   const li = document.createElement("li");
 
   const meta = document.createElement("span");
-  meta.textContent = `[${msgData.timestamp}] `;
+  meta.textContent = `[${msgData.time}] `;
 
   const name = document.createElement("strong");
   name.textContent = msgData.username + ": ";
@@ -26,49 +34,36 @@ function addMessage(msgData) {
 
   li.append(meta, name, text);
   messages.appendChild(li);
+
   messages.scrollTop = messages.scrollHeight;
 }
 
-// If invite code exists, resolve to roomId
-(async function () {
-  if (!roomId && invite) {
-    try {
-      const res = await fetch(`/api/room/${encodeURIComponent(invite)}`);
-      const room = await res.json();
-      roomId = room.id;
-      window.history.replaceState({}, "", `/chat.html?roomId=${roomId}`);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to resolve invite code.");
-    }
-  }
+// Handle message form submission
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
 
-  if (!roomId) {
-    alert("No roomId or invite code provided");
-    return;
-  }
-
-  roomTitle.textContent = `Chat Room #${roomId}`;
-  const username = usernameInput.value || "Anonymous";
+  const username = usernameInput.value.trim() || "Anonymous";
   const color = colorInput.value || "#000000";
+  const text = input.value.trim();
 
-  socket.emit("joinRoom", { roomId, username, color });
+  if (!text) return;
 
-  socket.on("chat history", (history) => {
-    messages.innerHTML = "";
-    history.forEach(addMessage);
-  });
+  const now = new Date();
+  const msgData = {
+    username,
+    color,
+    text,
+    roomId,
+    time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  };
 
-  socket.on("chat message", addMessage);
+  socket.emit("chat message", msgData); // Send to server
 
-  // Form submission
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const username = usernameInput.value.trim() || "Anonymous";
-    const color = colorInput.value || "#000000";
-    const text = input.value.trim();
-    if (!text) return;
-    socket.emit("chat message", { roomId, username, color, text });
-    input.value = "";
-  });
-})();
+  input.value = ""; // Clear input box
+  addMessageToDOM(msgData); // Add to self view
+});
+
+// Receive messages from server
+socket.on("chat message", (msgData) => {
+  addMessageToDOM(msgData);
+});
