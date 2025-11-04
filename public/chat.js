@@ -8,7 +8,26 @@ const colorInput = document.getElementById("color");
 const joinBtn = document.getElementById("joinBtn");
 
 const urlParams = new URLSearchParams(window.location.search);
-const roomId = urlParams.get("roomId");
+let roomId = urlParams.get("roomId");
+const invite = urlParams.get("invite");
+
+if (!roomId && invite) {
+  // resolve invite code to room id
+  try {
+    const res = await fetch(`/api/room/${encodeURIComponent(invite)}`);
+    if (res.ok) {
+      const room = await res.json();
+      roomId = room.id;
+      // Optionally update the URL to ?roomId=... for clarity
+      window.history.replaceState({}, "", `/chat.html?roomId=${roomId}`);
+    } else {
+      alert("Invalid invite code or room not found.");
+    }
+  } catch (e) {
+    console.error(e);
+    alert("Failed to resolve invite.");
+  }
+}
 
 let joined = false;
 
