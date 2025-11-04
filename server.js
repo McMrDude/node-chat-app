@@ -2,61 +2,68 @@
 // server.js
 // ----------------------
 
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const path = require('path');
-const bodyParser = require('body-parser');
-const { Pool } = require('pg');
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const path = require("path");
+const cors = require("cors");
+const { Pool } = require("pg");
 
-// Connect to Postgres
+// ---- Database Connection ----
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, 
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  connectionString: process.env.DATABASE_URL || "postgresql://chat_db_8gq8_user:aiIsaBjJWthbBOS97S62LOwmSnR78Plg@dpg-d446r6mmcj7s73bt602g-a.oregon-postgres.render.com/chat_db_8gq8",
+  ssl: { rejectUnauthorized: false }
 });
 
+// ---- Express and Socket.IO ----
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// Middlewares
+app.use(express.json());
+app.use(cors());
 
-// Helper to generate invite codes
-function makeInviteCode(len = 8) {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let s = '';
-  for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
+// Serve static files
+app.use(express.static(path.join(__dirname, "public")));
+
+// Helper to generate invite code
+function makeInviteCode(length = 10) {
+  let code = '';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  for (let i = 0; i < length; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
 }
 
-// GET /api/rooms?page=number
+// ---- REST API ----
+
+// GET /api/rooms?limit=21&offset=0 (public rooms listing with pagination)
 app.get('/api/rooms', async (req, res) => {
-  const page = parseInt(req.query.page || '1', 10);
-  const PAGE_SIZE = 21;
-  const offset = (page - 1) * PAGE_SIZE;
-
   try {
-    const totalRes = await pool.query('SELECT COUNT(*) FROM rooms WHERE is_private = false');
-    const totalRooms = parseInt(totalRes.rows[0].count, 10);
-    const totalPages = Math.ceil(totalRooms / PAGE_SIZE) || 1;
+    const limit = parseInt(req.query.limit) || 21;
+    const offset = parseInt(req.query.offset) || 0;
 
-    const roomsRes = await pool.query(
-      `SELECT * FROM rooms WHERE is_private = false
+    const result = await pool.query(
+      `SELECT id, name, is_private, invite_code, created_at
+       FROM rooms
+       WHERE is_private = FALSE
        ORDER BY created_at DESC
-       LIMIT $1 OFFSET $2`,
-      [PAGE_SIZE, offset]
+       LIMIT $1 OFFSET $2;`,
+      [limit, offset]
     );
 
+    const countResult = await pool.query(
+      `SELECT COUNT(*) FROM rooms WHERE is_private = FALSE;`
+    );
+
+    const totalRooms = parseInt(countResult.rows[0].count);
+
     res.json({
-      currentPage: page,
-      totalPages,
-      rooms: roomsRes.rows,
+      rooms: result.rows,
+      total: totalRooms,
     });
-  } catch (error) {
-    console.error('Error fetching rooms:', error);
+  } catch (err) {
+    console.error('Failed to get rooms:', err);
     res.status(500).json({ error: 'Database error' });
   }
 });
@@ -79,62 +86,65 @@ app.post('/api/rooms', async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO rooms (name, is_private, invite_code, created_at)
-       VALUES ($1, $2, $3, NOW())
+      `INSERT INTO rooms (name, is_private, invite_code)
+       VALUES ($1, $2, $3)
        RETURNING *`,
       [name, !!is_private, invite_code]
     );
 
+    if (!result.rows.length) {
+      console.error("⚠️ Room insert returned no rows");
+      return res.status(500).json({ error: 'Insert failed' });
+    }
+
+    console.log("✅ Room created:", result.rows[0]);
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('Failed to create room:', err);
+    console.error('❌ Failed to create room:', err);
     res.status(500).json({ error: 'Database error' });
   }
 });
 
-// GET /api/room/:inviteCode (get room by invite code)
-app.get('/api/room/:inviteCode', async (req, res) => {
-  const { inviteCode } = req.params;
+// GET /api/rooms/:id (get room by id or invite code)
+app.get('/api/rooms/:idOrCode', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM rooms WHERE invite_code = $1', [inviteCode]);
-    if (result.rowCount === 0) return res.status(404).json({ error: 'Room not found' });
+    const { idOrCode } = req.params;
+    const result = await pool.query(
+      `SELECT * FROM rooms 
+       WHERE id = $1 OR invite_code = $1 LIMIT 1`,
+      [idOrCode]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "Room not found" });
+    }
+
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('Error fetching room by invite code:', err);
+    console.error('Failed to get room:', err);
     res.status(500).json({ error: 'Database error' });
   }
 });
 
-// Socket.IO events for chat functionality
-const roomMessages = {}; // In memory for now, could be moved to DB later
+// ---- Socket.IO for chat ----
+io.on("connection", (socket) => {
+  console.log("A user connected");
 
-io.on('connection', (socket) => {
-  console.log('User connected');
-
-  socket.on('joinRoom', ({ roomId, username, color }) => {
+  socket.on("joinRoom", (roomId) => {
     socket.join(roomId);
-    console.log(`${username} joined room ${roomId}`);
-
-    if (!roomMessages[roomId]) roomMessages[roomId] = [];
-
-    // Send recent messages to the user
-    socket.emit('chat history', roomMessages[roomId]);
   });
 
-  socket.on('chat message', ({ roomId, username, color, text }) => {
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const msgData = { username, color, text, timestamp };
+  socket.on("chat message", (msgData) => {
+    io.to(msgData.roomId).emit("chat message", msgData);
+  });
 
-    if (!roomMessages[roomId]) roomMessages[roomId] = [];
-    roomMessages[roomId].push(msgData);
-
-    // Broadcast to everyone in the room
-    io.to(roomId).emit('chat message', msgData);
+  socket.on("disconnect", () => {
+    console.log("A user disconnected");
   });
 });
 
-// Server start
+// ---- Start the Server ----
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`✅ Server is running on http://localhost:${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
