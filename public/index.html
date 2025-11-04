@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <title>Chat Rooms</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #rooms { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+    body { font-family: Arial, sans-serif; margin: 20px;}
+    #rooms { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top: 12px; }
     .room { padding: 10px; border: 1px solid #ccc; cursor: pointer; text-align: center; }
     #pagination { margin-top: 20px; }
     .page-btn { margin: 0 5px; cursor: pointer; }
-    #createForm { margin-top: 12px; display: flex; gap: 8px; align-items: center; }
-    #createForm input[type="text"] { padding: 6px; }
+    #createForm { margin-bottom: 12px; display:flex; gap:8px; align-items:center;}
+    #createForm input[type="text"] { padding:6px; }
   </style>
 </head>
 <body>
@@ -18,11 +18,10 @@
 
   <div id="createForm">
     <input id="roomName" type="text" placeholder="Room name" />
-    <lable><input id="isPrivate" type="checkbox" /> Private</lable>
+    <label><input id="isPrivate" type="checkbox" /> Private</label>
     <button id="createBtn">Create Room</button>
-    <button id="seedBtn">Create sample public room</button>
   </div>
-  
+
   <div id="rooms"></div>
   <div id="pagination"></div>
 
