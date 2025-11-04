@@ -238,3 +238,18 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
+// DELETE /api/rooms/:id
+app.delete('/api/rooms/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Delete messages in the room first
+    await pool.query('DELETE FROM messages WHERE room_id = $1', [id]);
+    // Delete the room itself
+    await pool.query('DELETE FROM rooms WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Failed to delete room:', err);
+    res.status(500).json({ success: false, error: 'Could not delete room' });
+  }
+});

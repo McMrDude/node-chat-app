@@ -13,6 +13,25 @@ const messagesUL = document.getElementById("messages");
 const form = document.getElementById("form");
 const input = document.getElementById("input");
 
+const deleteBtn = document.getElementById('deleteRoomBtn');
+
+deleteBtn.addEventListener('click', async () => {
+  if (!confirm('Are you sure you want to delete this room?')) return;
+  try {
+    const res = await fetch(`/api/rooms/${roomId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      alert('Room deleted.');
+      window.location.href = '/'; // redirect to index
+    } else {
+      alert('Could not delete room.');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Error deleting room.');
+  }
+});
+
 async function resolveInviteIfNeeded() {
   if (!roomId && invite) {
     try {
@@ -114,9 +133,6 @@ async function loadHistory() {
       roomId
     };
 
-    // send to server - server will save and broadcast
-    socket.emit("chat message", payload);
-
     // optimistic UI: add message immediately
     const now = new Date();
     addMessageToDOM({
@@ -129,3 +145,15 @@ async function loadHistory() {
     input.value = "";
   });
 })();
+
+async function loadRoomName() {
+  try {
+    const res = await fetch(`/api/rooms/${roomId}`);
+    const room = await res.json();
+    document.getElementById('roomTitle').textContent = room.name;
+  } catch (err) {
+    console.error('Could not load room name:', err);
+  }
+}
+
+loadRoomName();
