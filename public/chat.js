@@ -11,6 +11,12 @@ const input = document.getElementById("input");
 const messages = document.getElementById("messages");
 const usernameInput = document.getElementById("username");
 const colorInput = document.getElementById("color");
+const joinBtn = document.getElementById("joinBtn");
+
+const urlParams = new URLSearchParams(window.location.search);
+const roomId = urlParams.get("roomId");
+
+let joined = false;
 
 // Helper function to add message to chat window
 function addMessageToDOM(msgData) {
@@ -32,32 +38,31 @@ function addMessageToDOM(msgData) {
   messages.scrollTop = messages.scrollHeight; // auto scroll
 }
 
+// Join room
+joinBtn.addEventListener("click", () => {
+  const username = usernameInput.value.trim() || "Anonymous";
+  const color = colorInput.value || "#000000";
+  if (!roomId) return alert("No room selected");
+  socket.emit("join room", { roomId, username, color });
+  joined = true;
+  form.style.display = "flex";
+});
+
+// Receive chat history
+socket.on("chat history", (history) => {
+  messages.innerHTML = "";
+  history.forEach(addMessageToDOM);
+});
+
+// Receive new messages
+socket.on("chat message", addMessageToDOM);
+
 // When the user submits the chat form
 form.addEventListener("submit", (e) => {
   e.preventDefault();
-
-  const username = usernameInput.value.trim() || "Anonymous";
-  const color = colorInput.value || "#000000";
+  if (!joined) return;
   const text = input.value.trim();
-
   if (!text) return;
-
-  const msgData = { username, color, text };
-
-  // Send message to server
-  socket.emit("chat message", msgData);
-
-  // Clear input box
+  socket.emit("chat message", { text });
   input.value = "";
-});
-
-// Receive chat history when connecting
-socket.on("chat history", (history) => {
-  messages.innerHTML = ""; // clear current
-  history.forEach((msg) => addMessageToDOM(msg));
-});
-
-// Receive new chat messages
-socket.on("chat message", (msgData) => {
-  addMessageToDOM(msgData);
 });
