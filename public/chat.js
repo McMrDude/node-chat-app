@@ -12,7 +12,6 @@ const colorInput = document.getElementById("color");
 const messagesUL = document.getElementById("messages");
 const form = document.getElementById("form");
 const input = document.getElementById("input");
-
 const deleteBtn = document.getElementById('deleteRoomBtn');
 
 deleteBtn.addEventListener('click', async () => {
@@ -37,13 +36,12 @@ async function resolveInviteIfNeeded() {
     try {
       const res = await fetch(`/api/rooms/${encodeURIComponent(invite)}`);
       const data = await res.json();
-      if (!data.success || !data.room) {
+      if (!data.id) {
         alert("Invalid invite link or room not found.");
         window.location.href = "/";
         return;
       }
-      roomId = data.room.id;
-      // update URL for clarity
+      roomId = data.id;
       window.history.replaceState({}, "", `/chat.html?roomId=${roomId}`);
     } catch (err) {
       console.error("Failed to resolve invite:", err);
@@ -103,9 +101,10 @@ async function loadHistory() {
     return;
   }
 
-  roomTitle.textContent = `Chat Room #${roomId}`;
+  // load room name first
+  await loadRoomName();
 
-  // load history from server
+  // load message history
   await loadHistory();
 
   // join socket room
@@ -113,8 +112,6 @@ async function loadHistory() {
 
   // receive messages from server
   socket.on("chat message", (msg) => {
-    // if the message came from ourselves, we already added it locally on send;
-    // but it's fine to show again (no dedupe)
     addMessageToDOM(msg);
   });
 
@@ -144,10 +141,23 @@ async function loadRoomName() {
   try {
     const res = await fetch(`/api/rooms/${roomId}`);
     const room = await res.json();
-    document.getElementById('roomTitle').textContent = room.name;
+    roomTitle.textContent = room.name;
   } catch (err) {
     console.error('Could not load room name:', err);
   }
 }
 
-loadRoomName();
+// Load saved user settings from localStorage
+const savedUsername = localStorage.getItem("username");
+const savedColor = localStorage.getItem("color");
+
+if (savedUsername) usernameInput.value = savedUsername;
+if (savedColor) colorInput.value = savedColor;
+
+// Save settings when they change
+usernameInput.addEventListener("input", () => {
+  localStorage.setItem("username", usernameInput.value);
+});
+colorInput.addEventListener("input", () => {
+  localStorage.setItem("color", colorInput.value);
+});
