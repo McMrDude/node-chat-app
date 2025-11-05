@@ -150,19 +150,26 @@ async function loadRoomName() {
     if (!text) return;
 
     const now = new Date();
+    const timeString = new Intl.DateTimeFormat([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    }).format(now);
+
     const payload = {
       username,
       color,
       text,
       roomId,
-      time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      time: timeString
     };
 
-    // send to server - server will broadcast to everyone including sender
     socket.emit("chat message", payload);
 
     input.value = "";
   });
+
 })();
 
 // Load saved user settings from localStorage
