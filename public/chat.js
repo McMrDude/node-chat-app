@@ -149,21 +149,14 @@ async function loadRoomName() {
     const text = input.value.trim();
     if (!text) return;
 
+    const now = new Date();
     const payload = {
       username,
       color,
       text,
-      roomId
-    };
-
-    const now = new Date();
-    const msgWithTimestamp = {
-      ...payload,
+      roomId,
       time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     };
-
-    // optimistic UI - add immediately
-    addMessageToDOM(msgWithTimestamp);
 
     // send to server - server will save and broadcast
     socket.emit("chat message", payload);
