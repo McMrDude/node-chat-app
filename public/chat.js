@@ -14,43 +14,71 @@ const form = document.getElementById("form");
 const input = document.getElementById("input");
 const deleteBtn = document.getElementById('deleteRoomBtn');
 
-deleteBtn.addEventListener('click', async () => {
-  if (!confirm('Are you sure you want to delete this room?')) return;
+let currentUser = null;
+
+// helper to get current user
+async function fetchMe() {
   try {
-    const res = await fetch(`/api/rooms/${roomId}`, { method: 'DELETE' });
+    const res = await fetch("/api/me");
     const data = await res.json();
     if (data.success) {
-      alert('Room deleted.');
-      window.location.href = '/'; // redirect to index
+      currentUser = data.user;
+      // prefill username & color
+      if (currentUser.username) usernameInput.value = currentUser.username;
+      if (currentUser.color) colorInput.value = currentUser.color;
     } else {
-      alert('Could not delete room.');
+      currentUser = null;
     }
   } catch (err) {
-    console.error(err);
-    alert('Error deleting room.');
+    currentUser = null;
   }
-});
+}
+
+// delete handler
+if (deleteBtn) {
+  deleteBtn.addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to delete this room?')) return;
+    try {
+      const res = await fetch(`/api/rooms/${roomId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        alert('Room deleted.');
+        window.location.href = '/'; // redirect to index
+      } else {
+        alert('Could not delete room.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting room.');
+    }
+  });
+}
 
 async function resolveInviteIfNeeded() {
   if (!roomId && invite) {
     try {
       const res = await fetch(`/api/rooms/${encodeURIComponent(invite)}`);
       const data = await res.json();
-
       let resolvedId = null;
-      if (data.id) {
-        resolvedId = data.id;
-      } else if (data.room && data.room.id) {
-        resolvedId = data.room.id;
-      }
-
+      if (data.id) resolvedId = data.id;
+      else if (data.room && data.room.id) resolvedId = data.room.id;
       if (!resolvedId) {
         alert("Invalid invite link or room not found.");
         window.location.href = "/";
         return;
       }
-
       roomId = resolvedId;
+      // if logged in, save visited private room server-side
+      await fetchMe();
+      if (currentUser) {
+        try {
+          await fetch("/api/users/visit-room", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roomId })
+          });
+        } catch (e) { /* ignore */ }
+      }
       window.history.replaceState({}, "", `/chat.html?roomId=${roomId}`);
     } catch (err) {
       console.error("Failed to resolve invite:", err);
@@ -62,17 +90,13 @@ async function resolveInviteIfNeeded() {
 
 function addMessageToDOM(msgData) {
   const li = document.createElement("li");
-
   const meta = document.createElement("span");
   meta.textContent = `[${msgData.time}] `;
-
   const name = document.createElement("strong");
   name.textContent = msgData.username + ": ";
   name.style.color = msgData.color || "#000000";
-
   const text = document.createElement("span");
   text.textContent = msgData.text || msgData.content || msgData;
-
   li.append(meta, name, text);
   messagesUL.appendChild(li);
   messagesUL.scrollTop = messagesUL.scrollHeight;
@@ -82,19 +106,9 @@ async function loadHistory() {
   try {
     const res = await fetch(`/api/messages/${roomId}`);
     const data = await res.json();
-    if (!data.success) {
-      console.error("Failed to load history", data);
-      return;
-    }
+    if (!data.success) return;
     messagesUL.innerHTML = "";
-    data.messages.forEach((m) => {
-      addMessageToDOM({
-        username: m.username,
-        color: m.color,
-        text: m.text,
-        time: m.time
-      });
-    });
+    data.messages.forEach(m => addMessageToDOM(m));
   } catch (err) {
     console.error("Error fetching messages:", err);
   }
@@ -104,85 +118,52 @@ async function loadRoomName() {
   try {
     const res = await fetch(`/api/rooms/${roomId}`);
     const data = await res.json();
-    if (data.name) {
-      roomTitle.textContent = data.name;
-    } else if (data.room && data.room.name) {
-      roomTitle.textContent = data.room.name;
-    } else {
-      roomTitle.textContent = `Chat Room #${roomId}`;
-    }
+    if (data.room && data.room.name) roomTitle.textContent = data.room.name;
+    else if (data.name) roomTitle.textContent = data.name;
+    else roomTitle.textContent = `Chat Room #${roomId}`;
   } catch (err) {
-    console.error('Could not load room name:', err);
     roomTitle.textContent = `Chat Room #${roomId}`;
   }
 }
 
-// join and wire up socket
+// main init
 (async function init() {
   await resolveInviteIfNeeded();
-
   if (!roomId) {
     alert("No room specified");
     window.location.href = "/";
     return;
   }
 
-  // load room name first
+  await fetchMe();
   await loadRoomName();
-
-  // load message history
   await loadHistory();
 
-  // join socket room
   socket.emit("joinRoom", roomId);
 
-  // receive messages from server
+  // receive messages
   socket.on("chat message", (msg) => {
     addMessageToDOM(msg);
   });
 
-  // form submit -> send message
+  // submit handler
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    const username = usernameInput.value.trim() || "Anonymous";
-    const color = colorInput.value || "#000000";
+    const username = usernameInput.value.trim() || (currentUser ? currentUser.username : "Anonymous");
+    const color = colorInput.value || (currentUser ? currentUser.color : "#000000");
     const text = input.value.trim();
     if (!text) return;
-
-    const now = new Date();
-    const timeString = new Intl.DateTimeFormat([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    }).format(now);
 
     const payload = {
       username,
       color,
       text,
       roomId,
-      time: timeString
+      user_id: currentUser ? currentUser.id : null
     };
 
+    // send to server
     socket.emit("chat message", payload);
-
     input.value = "";
   });
-
 })();
-
-// Load saved user settings from localStorage
-const savedUsername = localStorage.getItem("username");
-const savedColor = localStorage.getItem("color");
-
-if (savedUsername) usernameInput.value = savedUsername;
-if (savedColor) colorInput.value = savedColor;
-
-// Save settings when they change
-usernameInput.addEventListener("input", () => {
-  localStorage.setItem("username", usernameInput.value);
-});
-colorInput.addEventListener("input", () => {
-  localStorage.setItem("color", colorInput.value);
-});

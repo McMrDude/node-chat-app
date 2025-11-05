@@ -28,16 +28,31 @@
   </style>
 </head>
 <body>
-  <h2>Public Chat Rooms</h2>
+  <div id="container" style="display: flex; height: 100vh; gap: 10px;">
+    <!-- Sidebar for visited private rooms -->
+    <div id="sidebar" style="width: 250px; border-right: 1px solid #ccc; padding: 10px; overflow-y: auto;">
+      <h3>My Private Rooms</h3>
+      <div id="privateRoomsList">No private rooms yet.</div>
+    </div>
 
-  <div id="createForm">
-    <input id="roomName" type="text" placeholder="Room name" />
-    <label><input id="isPrivate" type="checkbox" /> Private</label>
-    <button id="createBtn">Create Room</button>
-  </div>
+    <!-- Main content: public rooms -->
+    <div id="roomsContainer" style="flex: 1; padding: 10px;">
+      <h2>Public Chat Rooms</h2>
 
-  <div id="rooms"></div>
-  <div id="pagination"></div>
+      <div id="authButtons" style="margin-bottom: 12px;">
+        <button onclick="window.location.href='/login.html'">Login</button>
+        <button onclick="window.location.href='/register.html'">Register</button>
+      </div>
+
+      <div id="createForm">
+        <input id="roomName" type="text" placeholder="Room name" />
+        <label><input id="isPrivate" type="checkbox" /> Private</label>
+        <button id="createBtn">Create Room</button>
+      </div>
+
+      <div id="rooms"></div>
+      <div id="pagination"></div>
+    </div>
 
   <script src="rooms.js"></script>
 </body>

@@ -5,9 +5,15 @@ const { Server } = require("socket.io");
 const path = require("path");
 const cors = require("cors");
 const { Pool } = require("pg");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const cookie = require("cookie");
+
+const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me"; // set securely in Render
+const JWT_COOKIE_NAME = "token";
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || "postgresql://chat_db_8gq8_user:aiIsaBjJWthbBOS97S62LOwmSnR78Plg@dpg-d446r6mmcj7s73bt602g-a.oregon-postgres.render.com/chat_db_8gq8",
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
@@ -19,7 +25,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// helper to generate invite codes
+// Helper: generate invite codes
 function makeInviteCode(length = 10) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let s = "";
@@ -27,19 +33,151 @@ function makeInviteCode(length = 10) {
   return s;
 }
 
-// -------------------
-// API: List public rooms (paginated)
-// -------------------
+// --------------------
+// AUTH HELPERS
+// --------------------
+function signToken(payload) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "30d" }); // expires in 30 days
+}
+
+function verifyToken(token) {
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (e) {
+    return null;
+  }
+}
+
+// middleware to get auth from cookie
+async function getUserFromRequest(req) {
+  try {
+    const raw = req.headers.cookie;
+    if (!raw) return null;
+    const parsed = cookie.parse(raw || "");
+    const token = parsed[JWT_COOKIE_NAME];
+    if (!token) return null;
+    const data = verifyToken(token);
+    if (!data || !data.id) return null;
+    // fetch fresh user info
+    const q = await pool.query("SELECT id, username, color FROM users WHERE id = $1 LIMIT 1", [data.id]);
+    if (!q.rows.length) return null;
+    return q.rows[0];
+  } catch (err) {
+    console.error("getUserFromRequest error:", err);
+    return null;
+  }
+}
+
+// --------------------
+// AUTH ROUTES
+// --------------------
+
+// Register: username + password (no email)
+app.post("/api/register", async (req, res) => {
+  try {
+    const { username, password, color } = req.body;
+    if (!username || !password) return res.status(400).json({ success: false, error: "username and password required" });
+    const hashed = await bcrypt.hash(password, 10);
+    const q = await pool.query(
+      "INSERT INTO users (username, password_hash, color) VALUES ($1, $2, $3) RETURNING id, username, color",
+      [username, hashed, color || "#000000"]
+    );
+    const user = q.rows[0];
+    const token = signToken({ id: user.id });
+    res.setHeader("Set-Cookie", cookie.serialize(JWT_COOKIE_NAME, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30 // 30 days
+    }));
+    res.json({ success: true, user });
+  } catch (err) {
+    if (err.code === "23505") { // unique violation
+      return res.status(400).json({ success: false, error: "username already taken" });
+    }
+    console.error("register error:", err);
+    res.status(500).json({ success: false, error: "server error" });
+  }
+});
+
+// Login
+app.post("/api/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ success: false, error: "username and password required" });
+    const q = await pool.query("SELECT id, username, password_hash, color FROM users WHERE username = $1 LIMIT 1", [username]);
+    if (!q.rows.length) return res.status(400).json({ success: false, error: "invalid credentials" });
+    const user = q.rows[0];
+    const ok = await bcrypt.compare(password, user.password_hash);
+    if (!ok) return res.status(400).json({ success: false, error: "invalid credentials" });
+    const token = signToken({ id: user.id });
+    res.setHeader("Set-Cookie", cookie.serialize(JWT_COOKIE_NAME, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30 // 30 days
+    }));
+    res.json({ success: true, user: { id: user.id, username: user.username, color: user.color } });
+  } catch (err) {
+    console.error("login error:", err);
+    res.status(500).json({ success: false, error: "server error" });
+  }
+});
+
+// Logout
+app.post("/api/logout", (req, res) => {
+  res.setHeader("Set-Cookie", cookie.serialize(JWT_COOKIE_NAME, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    expires: new Date(0)
+  }));
+  res.json({ success: true });
+});
+
+// GET /api/me -> return current user if logged in
+app.get("/api/me", async (req, res) => {
+  try {
+    const user = await getUserFromRequest(req);
+    if (!user) return res.json({ success: false });
+    // also load visited private rooms ids
+    const v = await pool.query("SELECT room_id FROM user_private_rooms WHERE user_id = $1", [user.id]);
+    const visited = v.rows.map(r => r.room_id);
+    res.json({ success: true, user: { ...user, visitedPrivateRooms: visited } });
+  } catch (err) {
+    console.error("me error:", err);
+    res.status(500).json({ success: false, error: "server error" });
+  }
+});
+
+// Save a visited private room for a logged-in user
+app.post("/api/users/visit-room", async (req, res) => {
+  try {
+    const user = await getUserFromRequest(req);
+    if (!user) return res.status(401).json({ success: false, error: "not authenticated" });
+    const { roomId } = req.body;
+    if (!roomId) return res.status(400).json({ success: false, error: "roomId required" });
+    await pool.query("INSERT INTO user_private_rooms (user_id, room_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [user.id, roomId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("visit-room error:", err);
+    res.status(500).json({ success: false, error: "server error" });
+  }
+});
+
+// --------------------
+// ROOMS & MESSAGES API (existing behavior, slight tweaks)
+// --------------------
+
+// GET paginated public rooms
 app.get("/api/rooms", async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const PAGE_SIZE = 21;
   const offset = (page - 1) * PAGE_SIZE;
-
   try {
     const countRes = await pool.query("SELECT COUNT(*) FROM rooms WHERE is_private = FALSE");
     const total = parseInt(countRes.rows[0].count, 10) || 0;
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
     const roomsRes = await pool.query(
       `SELECT id, name, is_private, invite_code, created_at
        FROM rooms
@@ -48,27 +186,18 @@ app.get("/api/rooms", async (req, res) => {
        LIMIT $1 OFFSET $2`,
       [PAGE_SIZE, offset]
     );
-
-    res.json({
-      success: true,
-      currentPage: page,
-      totalPages,
-      rooms: roomsRes.rows
-    });
+    res.json({ success: true, currentPage: page, totalPages, rooms: roomsRes.rows });
   } catch (err) {
-    console.error("Error fetching rooms:", err);
-    res.status(500).json({ success: false, error: "Database error" });
+    console.error("rooms fetch error:", err);
+    res.status(500).json({ success: false, error: "db error" });
   }
 });
 
-// -------------------
-// API: Create room
-// -------------------
+// Create room
 app.post("/api/rooms", async (req, res) => {
   try {
     const { name, is_private } = req.body;
-    if (!name || typeof name !== "string") return res.status(400).json({ success: false, error: "name required" });
-
+    if (!name) return res.status(400).json({ success: false, error: "name required" });
     let invite_code = null;
     if (is_private) {
       invite_code = makeInviteCode(12);
@@ -80,31 +209,26 @@ app.post("/api/rooms", async (req, res) => {
         else invite_code = makeInviteCode(12);
       }
     }
-
     const insert = await pool.query(
       `INSERT INTO rooms (name, is_private, invite_code, created_at)
        VALUES ($1, $2, $3, NOW())
        RETURNING id, name, is_private, invite_code`,
       [name, !!is_private, invite_code]
     );
-
-    if (!insert.rows.length) {
-      console.error("Room insert returned no rows");
-      return res.status(500).json({ success: false, error: "Insert failed" });
-    }
-
     const room = insert.rows[0];
-    console.log("Room created:", room);
+    // If user is logged in and room was created private, add to visited list
+    const user = await getUserFromRequest(req);
+    if (user && room.is_private) {
+      await pool.query("INSERT INTO user_private_rooms (user_id, room_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [user.id, room.id]);
+    }
     res.json({ success: true, ...room });
   } catch (err) {
-    console.error("Failed to create room:", err);
-    res.status(500).json({ success: false, error: "Database error" });
+    console.error("create room error:", err);
+    res.status(500).json({ success: false, error: "db error" });
   }
 });
 
-// -------------------
-// API: Resolve room by id or invite code
-// -------------------
+// Resolve room by id or invite code
 app.get("/api/rooms/:idOrCode", async (req, res) => {
   try {
     const { idOrCode } = req.params;
@@ -115,15 +239,12 @@ app.get("/api/rooms/:idOrCode", async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ success: false, error: "Room not found" });
     res.json({ success: true, room: result.rows[0] });
   } catch (err) {
-    console.error("Failed to fetch room:", err);
-    res.status(500).json({ success: false, error: "Database error" });
+    console.error("resolve room error:", err);
+    res.status(500).json({ success: false, error: "db error" });
   }
 });
 
-// -------------------
-// API: messages for a room (history)
-// returns messages joined with users (username, color)
-// -------------------
+// Room messages history
 app.get("/api/messages/:roomId", async (req, res) => {
   const { roomId } = req.params;
   try {
@@ -135,8 +256,6 @@ app.get("/api/messages/:roomId", async (req, res) => {
        ORDER BY m.timestamp ASC`,
       [roomId]
     );
-
-    // normalize to client fields
     const messages = q.rows.map(row => ({
       id: row.id,
       text: row.content,
@@ -144,66 +263,78 @@ app.get("/api/messages/:roomId", async (req, res) => {
       username: row.username || "Anonymous",
       color: row.color || "#000000"
     }));
-
     res.json({ success: true, messages });
   } catch (err) {
-    console.error("Failed to fetch messages:", err);
-    res.status(500).json({ success: false, error: "Database error" });
+    console.error("messages fetch error:", err);
+    res.status(500).json({ success: false, error: "db error" });
   }
 });
 
-// -------------------
-// Socket.IO: real-time chat
-// Handles both 'joinRoom' and 'join room' events from clients
-// Handles 'chat message' (client) and saves to DB then broadcasts
-// -------------------
+// Delete room (and its messages)
+app.delete("/api/rooms/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query("DELETE FROM messages WHERE room_id = $1", [id]);
+    await pool.query("DELETE FROM user_private_rooms WHERE room_id = $1", [id]);
+    await pool.query("DELETE FROM rooms WHERE id = $1", [id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("delete room error:", err);
+    res.status(500).json({ success: false, error: "db error" });
+  }
+});
+
+// --------------------
+// SOCKET.IO CHAT
+// --------------------
 io.on("connection", (socket) => {
-  console.log("A user connected (socket id:", socket.id, ")");
+  console.log("Socket connected:", socket.id);
 
-  // support both event names just in case
-  socket.on("joinRoom", joinRoomHandler);
-  socket.on("join room", joinRoomHandler);
-
-  async function joinRoomHandler(roomId) {
+  socket.on("joinRoom", (roomId) => {
     if (!roomId) return;
     socket.join(roomId.toString());
     console.log(`Socket ${socket.id} joined room ${roomId}`);
-  }
+  });
 
-  // Listen for messages from client
-  // support both 'chat message' and 'chatMessage'
+  // messages coming from client
   socket.on("chat message", async (msg) => {
-    await handleIncomingMessage(msg);
-  });
-  socket.on("chatMessage", async (msg) => {
-    await handleIncomingMessage(msg);
-  });
-
-  async function handleIncomingMessage(msg) {
-    // msg should contain: username, color, text (or 'text'/'content'), roomId (or room_id)
     try {
-      const username = (msg.username || msg.userName || "Anonymous").trim();
+      // payload: { username, color, text, roomId, (optional) user_id }
+      const username = (msg.username || "Anonymous").trim();
       const color = msg.color || "#000000";
       const text = msg.text || msg.content || "";
       const roomId = msg.roomId || msg.room_id || msg.room;
+      // user_id optional (client may include), otherwise try to read from cookie in handshake
+      let userId = msg.user_id || null;
+
+      // If userId not provided, attempt to read token from socket handshake cookie
+      if (!userId && socket.handshake && socket.handshake.headers && socket.handshake.headers.cookie) {
+        const parsed = cookie.parse(socket.handshake.headers.cookie || "");
+        const token = parsed[JWT_COOKIE_NAME];
+        if (token) {
+          const payload = verifyToken(token);
+          if (payload && payload.id) userId = payload.id;
+        }
+      }
 
       if (!text || !roomId) return;
 
-      // 1) upsert user (find by username, else create). We'll keep it simple: try insert ON CONFLICT (username)
-      let userId = null;
-      try {
-        const userRes = await pool.query(
-          `INSERT INTO users (username, color) VALUES ($1, $2)
-           ON CONFLICT (username) DO UPDATE SET color = EXCLUDED.color
-           RETURNING id`,
-          [username, color]
-        );
-        userId = userRes.rows[0].id;
-      } catch (uerr) {
-        console.error("User upsert error:", uerr);
+      // if userId absent, try to upsert a user by username (fallback)
+      if (!userId) {
+        try {
+          const userRes = await pool.query(
+            `INSERT INTO users (username, color) VALUES ($1, $2)
+             ON CONFLICT (username) DO UPDATE SET color = EXCLUDED.color
+             RETURNING id`,
+            [username, color]
+          );
+          userId = userRes.rows[0].id;
+        } catch (uerr) {
+          console.error("user upsert error fallback:", uerr);
+        }
       }
 
-      // 2) insert message
+      // insert message
       const insert = await pool.query(
         `INSERT INTO messages (room_id, user_id, content, timestamp)
          VALUES ($1, $2, $3, NOW())
@@ -212,7 +343,6 @@ io.on("connection", (socket) => {
       );
 
       const saved = insert.rows[0];
-      // Compose broadcast message payload with username and color (so clients don't need to join users)
       const outMsg = {
         id: saved.id,
         username,
@@ -222,34 +352,25 @@ io.on("connection", (socket) => {
         roomId
       };
 
+      // If this message is in a private room and user is logged in, mark visited
+      if (userId) {
+        // ensure entry in user_private_rooms
+        try {
+          await pool.query("INSERT INTO user_private_rooms (user_id, room_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [userId, roomId]);
+        } catch (e) { /* ignore */ }
+      }
+
       io.to(roomId.toString()).emit("chat message", outMsg);
     } catch (err) {
-      console.error("Error handling incoming message:", err);
+      console.error("socket chat message error:", err);
     }
-  }
+  });
 
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);
   });
 });
 
-// Start server
+// start server
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
-
-// DELETE /api/rooms/:id
-app.delete('/api/rooms/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    // Delete messages in the room first
-    await pool.query('DELETE FROM messages WHERE room_id = $1', [id]);
-    // Delete the room itself
-    await pool.query('DELETE FROM rooms WHERE id = $1', [id]);
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Failed to delete room:', err);
-    res.status(500).json({ success: false, error: 'Could not delete room' });
-  }
-});
+server.listen(PORT, () => console.log(`Server running on ${PORT}`));
