@@ -158,7 +158,7 @@ async function loadRoomName() {
       time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     };
 
-    // send to server - server will save and broadcast
+    // send to server - server will broadcast to everyone including sender
     socket.emit("chat message", payload);
 
     input.value = "";
