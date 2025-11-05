@@ -38,10 +38,9 @@ async function resolveInviteIfNeeded() {
       const data = await res.json();
 
       let resolvedId = null;
-
-      if (!data.id) {
+      if (data.id) {
         resolvedId = data.id;
-      } else if ( data.room && data.room.id) {
+      } else if (data.room && data.room.id) {
         resolvedId = data.room.id;
       }
 
@@ -52,7 +51,6 @@ async function resolveInviteIfNeeded() {
       }
 
       roomId = resolvedId;
-      // update URL for clarity
       window.history.replaceState({}, "", `/chat.html?roomId=${roomId}`);
     } catch (err) {
       console.error("Failed to resolve invite:", err);
@@ -102,6 +100,23 @@ async function loadHistory() {
   }
 }
 
+async function loadRoomName() {
+  try {
+    const res = await fetch(`/api/rooms/${roomId}`);
+    const data = await res.json();
+    if (data.name) {
+      roomTitle.textContent = data.name;
+    } else if (data.room && data.room.name) {
+      roomTitle.textContent = data.room.name;
+    } else {
+      roomTitle.textContent = `Chat Room #${roomId}`;
+    }
+  } catch (err) {
+    console.error('Could not load room name:', err);
+    roomTitle.textContent = `Chat Room #${roomId}`;
+  }
+}
+
 // join and wire up socket
 (async function init() {
   await resolveInviteIfNeeded();
@@ -141,30 +156,21 @@ async function loadHistory() {
       roomId
     };
 
+    const now = new Date();
+    const msgWithTimestamp = {
+      ...payload,
+      time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    };
+
+    // optimistic UI - add immediately
+    addMessageToDOM(msgWithTimestamp);
+
     // send to server - server will save and broadcast
     socket.emit("chat message", payload);
 
     input.value = "";
   });
 })();
-
-async function loadRoomName() {
-  try {
-    const res = await fetch(`/api/rooms/${roomId}`);
-    const data = await res.json();
-    
-    if (data.name) {
-      roomTitle.textContent = data.name;
-    } else if (data.room && data.room.name) {
-      roomTitle.textContent = data.room.name;
-    } else {
-      roomTitle.textContent = `Chat Room #${roomId}`;
-    }
-  } catch (err) {
-    console.error("Could not load room name: ", err);
-    roomTitle.textContent = `Chat Room #${roomId}`;
-  }
-}
 
 // Load saved user settings from localStorage
 const savedUsername = localStorage.getItem("username");
