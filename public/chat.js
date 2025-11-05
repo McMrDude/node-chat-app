@@ -140,10 +140,18 @@ async function loadHistory() {
 async function loadRoomName() {
   try {
     const res = await fetch(`/api/rooms/${roomId}`);
-    const room = await res.json();
-    roomTitle.textContent = room.name;
+    const data = await res.json();
+    
+    if (data.name) {
+      roomTitle.textContent = data.name;
+    } else if (data.room && data.room.name) {
+      roomTitle.textContent = data.room.name;
+    } else {
+      roomTitle.textContent = `Chat Room #${roomId}`;
+    }
   } catch (err) {
-    console.error('Could not load room name:', err);
+    console.error("Could not load room name: ", err);
+    roomTitle.textContent = `Chat Room #${roomId}`;
   }
 }
 
