@@ -36,12 +36,23 @@ async function resolveInviteIfNeeded() {
     try {
       const res = await fetch(`/api/rooms/${encodeURIComponent(invite)}`);
       const data = await res.json();
+
+      let resolvedId = null;
+
       if (!data.id) {
+        resolvedId = data.id;
+      } else if ( data.room && data.room.id) {
+        resolvedId = data.room.id;
+      }
+
+      if (!resolvedId) {
         alert("Invalid invite link or room not found.");
         window.location.href = "/";
         return;
       }
-      roomId = data.id;
+
+      roomId = resolvedId;
+      // update URL for clarity
       window.history.replaceState({}, "", `/chat.html?roomId=${roomId}`);
     } catch (err) {
       console.error("Failed to resolve invite:", err);
