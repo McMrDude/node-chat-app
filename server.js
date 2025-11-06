@@ -234,34 +234,41 @@ app.post("/api/rooms", async (req, res) => {
 app.get("/api/rooms/:idOrCode", async (req, res) => {
   try {
     const { idOrCode } = req.params;
+
+    // 1️⃣ Fetch the room
     const result = await pool.query(
       `SELECT id, name, is_private, invite_code FROM rooms WHERE id::text = $1 OR invite_code = $1 LIMIT 1`,
       [idOrCode]
     );
-    if (!result.rows.length) return res.status(404).json({ success: false, error: "Room not found" });
-    res.json({ success: true, room: result.rows[0] });
 
-    if (userId) {
-      const existing = await db.query(
-        'SELECT * FROM users_private_rooms WHERE user_id = $1 AND room_id = $2',
-        [userId, room.id]
+    if (!result.rows.length) return res.status(404).json({ success: false, error: "Room not found" });
+
+    const room = result.rows[0];
+
+    // 2️⃣ Fetch the logged-in user
+    const user = await getUserFromRequest(req);
+
+    // 3️⃣ Mark as visited if private
+    if (user && room.is_private) {
+      await pool.query(
+        `INSERT INTO user_private_rooms (user_id, room_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+        [user.id, room.id]
       );
 
-      if (existing.rowCount === 0) {
-        await db.query(
-          'INSERT INTO users_private_rooms (user_id, room_id) VALUES ($1, $2)',
-          [userId, room.id]
-        );
+      const visitedRes = await pool.query(
+        `SELECT room_id FROM user_private_rooms WHERE user_id = $1`,
+        [user.id]
+      );
 
-        if (req.session.user) {
-          req.session.user.visitedPrivateRooms =
-            req.session.user.visitedPrivateRooms || [];
-          req.session.user.visitedPrivateRooms.push(room.id);
-        }
-      }
+      const visitedRooms = visitedRes.rows.map(r => r.room_id);
+
+      // 4️⃣ Return room + visited rooms to client
+      return res.json({ success: true, room, visitedPrivateRooms: visitedRooms });
     }
 
-    return res.json({ success: true, room });
+    // 5️⃣ If room is not private or user not logged in
+    res.json({ success: true, room });
+
   } catch (err) {
     console.error("resolve room error:", err);
     res.status(500).json({ success: false, error: "db error" });

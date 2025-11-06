@@ -38,9 +38,7 @@ async function loadRooms(page = 1) {
         const div = document.createElement('div');
         div.className = 'room';
         div.textContent = room.name;
-        div.onclick = () => {
-          window.location.href = `/chat.html?roomId=${room.id}`;
-        };
+        div.onclick = () => visitRoom(room.id);
         roomsDiv.appendChild(div);
       });
     }
@@ -184,6 +182,25 @@ async function loadVisitedPrivateRooms() {
     } catch (e) {
       // ignore
     }
+  }
+}
+
+async function visitRoom(roomId) {
+  try {
+    const res = await fetch(`/api/rooms/${roomId}`);
+    const data = await res.json();
+    if (!data.success || !data.room) return;
+
+    // Update sidebar with latest visited rooms
+    if (data.visitedPrivateRooms) {
+      currentUser.visitedPrivateRooms = data.visitedPrivateRooms;
+      loadVisitedPrivateRooms(); // redraw sidebar
+    }
+
+    // Go to the chat page
+    window.location.href = `/chat.html?roomId=${roomId}`;
+  } catch (err) {
+    console.error('Error visiting room:', err);
   }
 }
 
