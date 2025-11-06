@@ -399,6 +399,8 @@ io.on("connection", (socket) => {
           console.error("Error marking private room visited:", e);
         }
       }
+
+      io.to(roomId.toString()).emit("chat message", outMsg);
     } catch (err) {
       console.error("socket chat message error:", err);
     }
