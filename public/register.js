@@ -2,7 +2,7 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
     e.preventDefault();
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value;
-    const color = document = document.getElementById("color").value || "#000000";
+    const color = document.getElementById("color").value || "#000000";
     try {
         const res = await fetch("/api/register", {
             method: "POST",

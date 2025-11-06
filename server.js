@@ -4,7 +4,6 @@ const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
 const cors = require("cors");
-const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cookie = require("cookie");
@@ -12,10 +11,14 @@ const cookie = require("cookie");
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me"; // set securely in Render
 const JWT_COOKIE_NAME = "token";
 
+import pkg from "pg";
+const { Pool } = pkg;
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
+
 
 const app = express();
 const server = http.createServer(app);
