@@ -267,7 +267,7 @@ app.get("/api/rooms/:idOrCode", async (req, res) => {
     }
 
     // 5️⃣ If room is not private or user not logged in
-    res.json({ success: true, room });
+    return res.json({ success: true, room });
 
   } catch (err) {
     console.error("resolve room error:", err);

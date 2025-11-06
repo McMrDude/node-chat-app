@@ -80,6 +80,11 @@ async function resolveInviteIfNeeded() {
         } catch (e) { /* ignore */ }
       }
       window.history.replaceState({}, "", `/chat.html?roomId=${roomId}`);
+
+      if (data.visitedPrivateRooms) {
+        currentUser.visitedPrivateRooms = data.visitedPrivateRooms;
+        loadVisitedPrivateRooms();
+      }
     } catch (err) {
       console.error("Failed to resolve invite:", err);
       alert("Failed to resolve invite.");
@@ -87,6 +92,39 @@ async function resolveInviteIfNeeded() {
     }
   }
 }
+
+async function visitPrivateRoom(roomId) {
+  try {
+    const res = await fetch(`/api/rooms/${roomId}`);
+    const data = await res.json();
+    if (!data.success || !data.room) return;
+
+    // ✅ Update currentUser with latest visited rooms
+    if (data.visitedPrivateRooms) {
+      currentUser.visitedPrivateRooms = data.visitedPrivateRooms;
+      loadVisitedPrivateRooms(); // refresh sidebar
+    }
+
+    // navigate to chat
+    window.location.href = `/chat.html?roomId=${roomId}`;
+  } catch (err) {
+    console.error("Error visiting room:", err);
+  }
+}
+
+async function refreshUser() {
+  try {
+    const res = await fetch('/api/me');
+    const data = await res.json();
+    if (data.success) {
+      currentUser = data.user;
+      visitPrivateRoom(); // redraw sidebar
+    }
+  } catch (err) {
+    console.error("Error refreshing user:", err);
+  }
+}
+
 
 function addMessageToDOM(msgData) {
   const li = document.createElement("li");
