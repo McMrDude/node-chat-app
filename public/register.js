@@ -11,6 +11,19 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
         });
         const data = await res.json();
         if (data.success) {
+            // Migrate local visited private rooms to server
+            const localVisited = JSON.parse(localStorage.getItem("visitedPrivateRooms") || "[]");
+            if (localVisited.length) {
+                for (const roomId of localVisited) {
+                    await fetch("/api/users/visit-room", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ roomId })
+                    });
+                }
+                localStorage.removeItem("visitedPrivateRooms");
+            }
+
             // already logged in via cookie
             window.location.href = "/";
         } else {
