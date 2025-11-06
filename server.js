@@ -11,8 +11,7 @@ const cookie = require("cookie");
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me"; // set securely in Render
 const JWT_COOKIE_NAME = "token";
 
-import pkg from "pg";
-const { Pool } = pkg;
+const { Pool } = require("pg");
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
