@@ -7,8 +7,9 @@ const createBtn = document.getElementById('createBtn');
 
 let currentPage = 1;
 let totalPages = 1;
-let currentUser = null; // will be set to {id, username, color, visitedPrivateRooms}
+let currentUser = null; // {id, username, color, visitedPrivateRooms}
 
+// Fetch current logged-in user
 async function fetchMe() {
   try {
     const res = await fetch('/api/me');
@@ -23,7 +24,7 @@ async function fetchMe() {
   }
 }
 
-// load public rooms with pagination
+// Load public rooms with pagination
 async function loadRooms(page = 1) {
   currentPage = page;
   try {
@@ -34,7 +35,7 @@ async function loadRooms(page = 1) {
     if (!data.success || !Array.isArray(data.rooms) || data.rooms.length === 0) {
       roomsDiv.textContent = 'No public rooms yet. Create one above!';
     } else {
-      data.rooms.forEach((room) => {
+      data.rooms.forEach(room => {
         const div = document.createElement('div');
         div.className = 'room';
         div.textContent = room.name;
@@ -52,6 +53,7 @@ async function loadRooms(page = 1) {
   }
 }
 
+// Pagination rendering
 function renderPagination() {
   paginationDiv.innerHTML = '';
   if (totalPages <= 1) return;
@@ -82,14 +84,12 @@ function renderPagination() {
   if (currentPage < totalPages) paginationDiv.appendChild(makeBtn('>>', totalPages));
 }
 
+// Create room
 createBtn.addEventListener('click', async () => {
   const name = roomNameInput.value.trim();
   const isPrivate = isPrivateInput.checked;
 
-  if (!name) {
-    alert('Please enter a room name');
-    return;
-  }
+  if (!name) return alert('Please enter a room name');
 
   try {
     const res = await fetch('/api/rooms', {
@@ -98,46 +98,12 @@ createBtn.addEventListener('click', async () => {
       body: JSON.stringify({ name, is_private: isPrivate }),
     });
     const room = await res.json();
-    if (!room || !room.success) {
-      console.error("Create room failed response:", room);
-      alert('Could not create room.');
-      return;
-    }
+    if (!room || !room.success) return alert('Could not create room.');
 
     if (room.is_private) {
       const inviteLink = `${window.location.origin}/chat.html?invite=${encodeURIComponent(room.invite_code)}`;
-
-      const modal = document.createElement('div');
-      modal.className = 'invite-modal';
-      modal.innerHTML = `
-        <h3>Private Room Created</h3>
-        <p>Share this link:</p>
-        <input id="inviteLinkInput" type="text" readonly value="${inviteLink}">
-        <div style="display:flex; gap:8px;">
-          <button id="copyBtn">Copy Link</button>
-          <button id="closeBtn">Close</button>
-        </div>
-      `;
-      document.body.appendChild(modal);
-
-      document.getElementById('copyBtn').addEventListener('click', async () => {
-        const input = document.getElementById('inviteLinkInput');
-        try {
-          await navigator.clipboard.writeText(input.value);
-          alert('Link copied to clipboard');
-        } catch (err) {
-          input.select();
-          document.execCommand('copy');
-          alert('Link copied to clipboard (fallback)');
-        }
-      });
-
-      document.getElementById('closeBtn').addEventListener('click', () => {
-        modal.remove();
-        loadRooms(currentPage);
-      });
+      showInviteModal(inviteLink);
     } else {
-      // redirect to the public room
       window.location.href = `/chat.html?roomId=${room.id}`;
     }
   } catch (err) {
@@ -146,67 +112,89 @@ createBtn.addEventListener('click', async () => {
   }
 });
 
-// load visited private rooms for the sidebar (if logged in)
-async function loadVisitedPrivateRooms() {
-  const sidebarId = "privateSidebar";
-  let sidebar = document.getElementById(sidebarId);
-  if (!sidebar) {
-    sidebar = document.createElement("div");
-    sidebar.id = sidebarId;
-    sidebar.style.marginBottom = "12px";
-    sidebar.innerHTML = "<h3>My Private Rooms</h3>";
-    // insert before rooms div
-    document.body.insertBefore(sidebar, document.getElementById("rooms"));
-  }
-  sidebar.innerHTML = "<h3>My Private Rooms</h3>";
-  if (!currentUser || !Array.isArray(currentUser.visitedPrivateRooms) || currentUser.visitedPrivateRooms.length === 0) {
-    const p = document.createElement("div");
-    p.textContent = "No private rooms yet (visit a private room once to save it).";
-    sidebar.appendChild(p);
-    return;
-  }
+// Show invite modal for private rooms
+function showInviteModal(inviteLink) {
+  const modal = document.createElement('div');
+  modal.className = 'invite-modal';
+  modal.innerHTML = `
+    <h3>Private Room Created</h3>
+    <p>Share this link:</p>
+    <input id="inviteLinkInput" type="text" readonly value="${inviteLink}">
+    <div style="display:flex; gap:8px;">
+      <button id="copyBtn">Copy Link</button>
+      <button id="closeBtn">Close</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
 
-  for (const rid of currentUser.visitedPrivateRooms) {
+  document.getElementById('copyBtn').addEventListener('click', async () => {
+    const input = document.getElementById('inviteLinkInput');
     try {
-      const rres = await fetch(`/api/rooms/${rid}`);
-      const rdata = await rres.json();
-      if (!rdata.success || !rdata.room) continue;
-      const d = document.createElement("div");
-      d.textContent = rdata.room.name;
-      d.style.cursor = "pointer";
-      d.style.padding = "6px";
-      d.style.border = "1px solid #ddd";
-      d.style.marginBottom = "6px";
-      d.onclick = () => window.location.href = `/chat.html?roomId=${rid}`;
-      sidebar.appendChild(d);
-    } catch (e) {
-      // ignore
+      await navigator.clipboard.writeText(input.value);
+      alert('Link copied!');
+    } catch {
+      input.select();
+      document.execCommand('copy');
+      alert('Link copied (fallback)');
     }
-  }
+  });
+
+  document.getElementById('closeBtn').addEventListener('click', () => {
+    modal.remove();
+    loadRooms(currentPage);
+  });
 }
 
+// Visit room (handles private room sidebar update)
 async function visitRoom(roomId) {
   try {
     const res = await fetch(`/api/rooms/${roomId}`);
     const data = await res.json();
     if (!data.success || !data.room) return;
 
-    // Update sidebar with latest visited rooms
+    // Update currentUser's visited private rooms
     if (data.visitedPrivateRooms) {
       currentUser.visitedPrivateRooms = data.visitedPrivateRooms;
-      loadVisitedPrivateRooms(); // redraw sidebar
+      loadVisitedPrivateRooms();
     }
 
-    // Go to the chat page
     window.location.href = `/chat.html?roomId=${roomId}`;
   } catch (err) {
     console.error('Error visiting room:', err);
   }
 }
 
-// initial load
+// Render visited private rooms sidebar
+function loadVisitedPrivateRooms() {
+  const list = document.getElementById('privateRoomsList');
+  list.innerHTML = '';
+
+  if (!currentUser || !Array.isArray(currentUser.visitedPrivateRooms) || currentUser.visitedPrivateRooms.length === 0) {
+    list.textContent = 'No private rooms yet.';
+    return;
+  }
+
+  currentUser.visitedPrivateRooms.forEach(async rid => {
+    try {
+      const res = await fetch(`/api/rooms/${rid}`);
+      const data = await res.json();
+      if (!data.success || !data.room) return;
+
+      const div = document.createElement('div');
+      div.textContent = data.room.name;
+      div.style.cursor = 'pointer';
+      div.style.padding = '6px';
+      div.style.border = '1px solid #ddd';
+      div.style.marginBottom = '6px';
+      div.onclick = () => window.location.href = `/chat.html?roomId=${rid}`;
+      list.appendChild(div);
+    } catch { /* ignore */ }
+  });
+}
+
+// Initial load
 (async function init() {
   await fetchMe();
   await loadRooms(1);
-  await loadVisitedPrivateRooms();
+  loadVisitedPrivateRooms();
 })();
