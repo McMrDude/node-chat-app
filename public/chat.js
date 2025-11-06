@@ -118,11 +118,29 @@ async function loadRoomName() {
   try {
     const res = await fetch(`/api/rooms/${roomId}`);
     const data = await res.json();
-    if (data.room && data.room.name) roomTitle.textContent = data.room.name;
-    else if (data.name) roomTitle.textContent = data.name;
-    else roomTitle.textContent = `Chat Room #${roomId}`;
+    if (!data.success || !data.room) return;
+
+    roomTitle.textContent = data.room.name;
+
+    if (data.room.is_private && data.room.invite_code) {
+      const inviteLink = `${window.location.origin}/chat.html?invite=${encodeURIComponent(data.room.invite_code)}`;
+      const container = document.getElementById('inviteLinkContainer');
+      container.innerHTML = `
+        <strong>Invite Link:</strong>
+        <input type="text" value="${inviteLink}" readonly style="width:60%">
+        <button id="copyInviteBtn">Copy</button>
+      `;
+      document.getElementById('copyInviteBtn').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(inviteLink);
+          alert('Invite link copied!');
+        } catch {
+          alert('Failed to copy. Try manually selecting the text.');
+        }
+      });
+    }
   } catch (err) {
-    roomTitle.textContent = `Chat Room #${roomId}`;
+    console.error('Could not load room name:', err);
   }
 }
 

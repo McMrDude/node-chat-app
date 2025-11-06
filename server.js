@@ -240,6 +240,28 @@ app.get("/api/rooms/:idOrCode", async (req, res) => {
     );
     if (!result.rows.length) return res.status(404).json({ success: false, error: "Room not found" });
     res.json({ success: true, room: result.rows[0] });
+
+    if (userId) {
+      const existing = await db.query(
+        'SELECT * FROM users_private_rooms WHERE user_id = $1 AND room_id = $2',
+        [userId, room.id]
+      );
+
+      if (existing.rowCount === 0) {
+        await db.query(
+          'INSERT INTO users_private_rooms (user_id, room_id) VALUES ($1, $2)',
+          [userId, room.id]
+        );
+
+        if (req.session.user) {
+          req.session.user.visitedPrivateRooms =
+            req.session.user.visitedPrivateRooms || [];
+          req.session.user.visitedPrivateRooms.push(room.id);
+        }
+      }
+    }
+
+    return res.json({ success: true, room });
   } catch (err) {
     console.error("resolve room error:", err);
     res.status(500).json({ success: false, error: "db error" });
