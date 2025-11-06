@@ -385,13 +385,20 @@ io.on("connection", (socket) => {
 
       // If this message is in a private room and user is logged in, mark visited
       if (userId) {
-        // ensure entry in user_private_rooms
         try {
-          await pool.query("INSERT INTO user_private_rooms (user_id, room_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [userId, roomId]);
-        } catch (e) { /* ignore */ }
+          // Fetch room type
+          const roomRes = await pool.query("SELECT is_private FROM rooms WHERE id = $1 LIMIT 1", [roomId]);
+          if (roomRes.rows.length && roomRes.rows[0].is_private) {
+            // Only mark visited if room is private
+            await pool.query(
+              "INSERT INTO user_private_rooms (user_id, room_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+              [userId, roomId]
+            );
+          }
+        } catch (e) {
+          console.error("Error marking private room visited:", e);
+        }
       }
-
-      io.to(roomId.toString()).emit("chat message", outMsg);
     } catch (err) {
       console.error("socket chat message error:", err);
     }
