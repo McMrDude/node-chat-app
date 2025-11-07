@@ -382,6 +382,19 @@ io.on("connection", (socket) => {
         }
       }
 
+      if (userId) {
+        try {
+          const check = await pool.query("SELECT 1 FROM users WHERE id = $1", [userId]);
+          if (check.rows.length === 0) {
+            console.warn(`user_id ${userId} not found in users table — treating as anonymous`);
+            userId = null;
+          }
+        } catch (err) {
+          console.error("User existence check failed:", err);
+          userId = null;
+        }
+      }
+
       // Don’t process empty messages or invalid rooms
       if (!text || !roomId) return;
 
