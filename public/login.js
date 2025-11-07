@@ -1,4 +1,3 @@
-// public/login.js
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const username = document.getElementById("username").value.trim();
@@ -12,24 +11,20 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     });
     const data = await res.json();
     if (data.success) {
-      // Migrate in background (fire-and-forget)
-      (async function migrate() {
+      const localVisited = JSON.parse(localStorage.getItem("visitedPrivateRooms") || "[]");
+      if (Array.isArray(localVisited) && localVisited.length) {
         try {
-          const localVisited = JSON.parse(localStorage.getItem("visitedPrivateRooms") || "[]");
-            if (localVisited.length) {
-                await fetch("/api/users/visit-rooms-batch", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ roomIds: localVisited })
-                }).catch(() => {});
-                localStorage.removeItem("visitedPrivateRooms");
-            }
+          await fetch("/api/users/visit-rooms-batch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roomIds: localVisited })
+          });
+          localStorage.removeItem("visitedPrivateRooms");
         } catch (e) {
-          console.error("Migration error (login):", e);
+          console.error("Migration (login) failed:", e);
         }
-      })();
+      }
 
-      // Redirect immediately
       window.location.href = "/";
     } else {
       alert(data.error || "Login failed");

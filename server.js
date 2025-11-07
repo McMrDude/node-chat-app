@@ -137,26 +137,38 @@ app.post("/api/logout", (req, res) => {
   res.json({ success: true });
 });
 
+// server.js — add this route
 app.post("/api/users/visit-rooms-batch", async (req, res) => {
   try {
-    const user = req.user;
-    if (!user) return res.json({ success: false, error: "Not logged in" });
+    const user = await getUserFromRequest(req);
+    if (!user) return res.status(401).json({ success: false, error: "Not authenticated" });
 
     const { roomIds } = req.body;
-    if (!Array.isArray(roomIds)) return res.json({ success: false });
-
-    for (const id of roomIds) {
-      await pool.query(
-        `INSERT INTO user_private_rooms (user_id, room_id)
-         VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-        [user.id, id]
-      );
+    if (!Array.isArray(roomIds) || roomIds.length === 0) {
+      return res.json({ success: true, inserted: 0 });
     }
 
-    res.json({ success: true });
-  } catch (e) {
-    console.error("Error in batch visit-rooms:", e);
-    res.json({ success: false });
+    // Build a parameterized multi-row insert: (user.id, $1), (user.id, $2), ...
+    const values = [];
+    const params = [];
+    let paramIdx = 1;
+    for (const rid of roomIds) {
+      params.push(`($${paramIdx}, $${paramIdx + 1})`);
+      values.push(user.id, rid);
+      paramIdx += 2;
+    }
+
+    const sql = `
+      INSERT INTO user_private_rooms (user_id, room_id)
+      VALUES ${params.join(", ")}
+      ON CONFLICT DO NOTHING
+    `;
+    await pool.query(sql, values);
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("visit-rooms-batch error:", err);
+    return res.status(500).json({ success: false, error: "server error" });
   }
 });
 

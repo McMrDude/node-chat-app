@@ -1,4 +1,3 @@
-// public/register.js
 document.getElementById("registerForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const username = document.getElementById("username").value.trim();
@@ -13,26 +12,25 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
     });
     const data = await res.json();
     if (data.success) {
-      // Start migration in the background (fire-and-forget)
-      (async function migrate() {
+      // get local visited rooms
+      const localVisited = JSON.parse(localStorage.getItem("visitedPrivateRooms") || "[]");
+      if (Array.isArray(localVisited) && localVisited.length) {
         try {
-          // Migrate local visited private rooms to server (batch)
-            const localVisited = JSON.parse(localStorage.getItem("visitedPrivateRooms") || "[]");
-            if (localVisited.length) {
-                await fetch("/api/users/visit-rooms-batch", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ roomIds: localVisited })
-                }).catch(() => {});
-                localStorage.removeItem("visitedPrivateRooms");
-            }
+          // send batch to server (await to ensure migration runs)
+          await fetch("/api/users/visit-rooms-batch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roomIds: localVisited })
+          });
+          // only clear local storage on success attempt
+          localStorage.removeItem("visitedPrivateRooms");
         } catch (e) {
-          // swallow errors so migration never blocks
-          console.error("Migration error (register):", e);
+          console.error("Migration (register) failed:", e);
+          // do not block redirect — best-effort
         }
-      })();
+      }
 
-      // Already logged in via cookie — redirect immediately
+      // redirect after attempting migration
       window.location.href = "/";
     } else {
       alert(data.error || "Registration failed");
