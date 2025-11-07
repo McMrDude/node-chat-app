@@ -7,24 +7,20 @@ const createBtn = document.getElementById('createBtn');
 
 let currentPage = 1;
 let totalPages = 1;
-let currentUser = null; // {id, username, color, visitedPrivateRooms}
+let currentUser = null; // will be {id, username, color, visitedPrivateRooms} or null
 
-// Fetch current logged-in user
+// Get authenticated user (server returns visitedPrivateRooms for logged-in users)
 async function fetchMe() {
   try {
     const res = await fetch('/api/me');
     const data = await res.json();
-    if (data.success) {
-      currentUser = data.user;
-    } else {
-      currentUser = null;
-    }
+    if (data.success) currentUser = data.user;
+    else currentUser = null;
   } catch (err) {
     currentUser = null;
   }
 }
 
-// Load public rooms with pagination
 async function loadRooms(page = 1) {
   currentPage = page;
   try {
@@ -35,7 +31,7 @@ async function loadRooms(page = 1) {
     if (!data.success || !Array.isArray(data.rooms) || data.rooms.length === 0) {
       roomsDiv.textContent = 'No public rooms yet. Create one above!';
     } else {
-      data.rooms.forEach(room => {
+      data.rooms.forEach((room) => {
         const div = document.createElement('div');
         div.className = 'room';
         div.textContent = room.name;
@@ -53,7 +49,6 @@ async function loadRooms(page = 1) {
   }
 }
 
-// Pagination rendering
 function renderPagination() {
   paginationDiv.innerHTML = '';
   if (totalPages <= 1) return;
@@ -84,12 +79,14 @@ function renderPagination() {
   if (currentPage < totalPages) paginationDiv.appendChild(makeBtn('>>', totalPages));
 }
 
-// Create room
 createBtn.addEventListener('click', async () => {
   const name = roomNameInput.value.trim();
   const isPrivate = isPrivateInput.checked;
 
-  if (!name) return alert('Please enter a room name');
+  if (!name) {
+    alert('Please enter a room name');
+    return;
+  }
 
   try {
     const res = await fetch('/api/rooms', {
@@ -98,11 +95,21 @@ createBtn.addEventListener('click', async () => {
       body: JSON.stringify({ name, is_private: isPrivate }),
     });
     const room = await res.json();
-    if (!room || !room.success) return alert('Could not create room.');
+    if (!room || !room.success) {
+      console.error("Create room failed response:", room);
+      alert('Could not create room.');
+      return;
+    }
 
     if (room.is_private) {
       const inviteLink = `${window.location.origin}/chat.html?invite=${encodeURIComponent(room.invite_code)}`;
       showInviteModal(inviteLink);
+      // If user is logged in, ensure the server saved it already (server side is handling it)
+      // For anonymous users, we also save locally
+      if (!currentUser) {
+        addRoomToLocalVisited(room.id);
+        loadVisitedPrivateRooms();
+      }
     } else {
       window.location.href = `/chat.html?roomId=${room.id}`;
     }
@@ -112,7 +119,6 @@ createBtn.addEventListener('click', async () => {
   }
 });
 
-// Show invite modal for private rooms
 function showInviteModal(inviteLink) {
   const modal = document.createElement('div');
   modal.className = 'invite-modal';
@@ -131,11 +137,11 @@ function showInviteModal(inviteLink) {
     const input = document.getElementById('inviteLinkInput');
     try {
       await navigator.clipboard.writeText(input.value);
-      alert('Link copied!');
-    } catch {
+      alert('Link copied to clipboard');
+    } catch (err) {
       input.select();
       document.execCommand('copy');
-      alert('Link copied (fallback)');
+      alert('Link copied to clipboard (fallback)');
     }
   });
 
@@ -145,78 +151,93 @@ function showInviteModal(inviteLink) {
   });
 }
 
-// Visit room (handles private room sidebar update)
+// Add a roomId to localStorage visited list (anonymous users)
+function addRoomToLocalVisited(roomId) {
+  try {
+    const arr = JSON.parse(localStorage.getItem("visitedPrivateRooms") || "[]");
+    if (!arr.includes(roomId)) {
+      arr.push(roomId);
+      localStorage.setItem("visitedPrivateRooms", JSON.stringify(arr));
+    }
+  } catch (e) {
+    console.error("localStorage write error:", e);
+  }
+}
+
+// Visit room: server returns visitedPrivateRooms when logged-in and private
 async function visitRoom(roomId) {
   try {
     const res = await fetch(`/api/rooms/${roomId}`);
     const data = await res.json();
-    if (!data.success || !data.room) return;
-
-    // 1️⃣ If logged in, update server-side
-    if (currentUser) {
-      if (data.visitedPrivateRooms) {
-        currentUser.visitedPrivateRooms = data.visitedPrivateRooms;
-        loadVisitedPrivateRooms();
-      }
-    } else {
-      // 2️⃣ Anonymous user → store locally
-      let localVisited = JSON.parse(localStorage.getItem("visitedPrivateRooms") || "[]");
-      if (!localVisited.includes(roomId)) {
-        localVisited.push(roomId);
-        localStorage.setItem("visitedPrivateRooms", JSON.stringify(localVisited));
-      }
-      loadVisitedPrivateRooms(); // redraw sidebar
+    if (!data.success || !data.room) {
+      // fallback: still navigate
+      window.location.href = `/chat.html?roomId=${roomId}`;
+      return;
     }
 
-    // Go to the chat page
+    // If user is logged-in, backend may return visitedPrivateRooms; update currentUser
+    if (data.visitedPrivateRooms && currentUser) {
+      currentUser.visitedPrivateRooms = data.visitedPrivateRooms;
+    } else if (!currentUser) {
+      // anonymous -> store locally (only if room is private)
+      if (data.room && data.room.is_private) {
+        addRoomToLocalVisited(data.room.id);
+      }
+    }
+
+    // Refresh sidebar now
+    loadVisitedPrivateRooms();
+
+    // navigate to chat
     window.location.href = `/chat.html?roomId=${roomId}`;
   } catch (err) {
     console.error('Error visiting room:', err);
+    window.location.href = `/chat.html?roomId=${roomId}`; // ensure navigation even on error
   }
 }
 
-// Render visited private rooms sidebar
+// Render sidebar list using server-side list if logged in, otherwise localStorage
 async function loadVisitedPrivateRooms() {
-  const sidebar = document.getElementById("privateSidebar") || createSidebar();
-  sidebar.innerHTML = "<h3>My Private Rooms</h3>";
+  const list = document.getElementById('privateRoomsList');
+  if (!list) return;
+  list.innerHTML = '';
 
-  let visitedRooms = [];
+  let visited = [];
   if (currentUser && Array.isArray(currentUser.visitedPrivateRooms)) {
-    visitedRooms = currentUser.visitedPrivateRooms;
+    visited = currentUser.visitedPrivateRooms.slice(); // copy
   } else {
-    // anonymous users → get from localStorage
-    visitedRooms = JSON.parse(localStorage.getItem("visitedPrivateRooms") || "[]");
+    visited = JSON.parse(localStorage.getItem("visitedPrivateRooms") || "[]");
   }
 
-  if (!visitedRooms.length) {
-    const p = document.createElement("div");
-    p.textContent = "No private rooms yet (visit a private room once to save it).";
-    sidebar.appendChild(p);
+  if (!visited.length) {
+    list.textContent = 'No private rooms yet.';
     return;
   }
 
-  for (const rid of visitedRooms) {
+  // populate with room names (fetch each)
+  list.innerHTML = ''; // clear
+  for (const rid of visited) {
     try {
       const rres = await fetch(`/api/rooms/${rid}`);
       const rdata = await rres.json();
       if (!rdata.success || !rdata.room) continue;
-      const d = document.createElement("div");
+      const d = document.createElement('div');
       d.textContent = rdata.room.name;
-      d.style.cursor = "pointer";
-      d.style.padding = "6px";
-      d.style.border = "1px solid #ddd";
-      d.style.marginBottom = "6px";
-      d.onclick = () => window.location.href = `/chat.html?roomId=${rid}`;
-      sidebar.appendChild(d);
+      d.style.cursor = 'pointer';
+      d.style.padding = '6px';
+      d.style.border = '1px solid #ddd';
+      d.style.marginBottom = '6px';
+      d.onclick = () => visitRoom(rid);
+      list.appendChild(d);
     } catch (e) {
-      // ignore
+      // ignore per-room fetch errors
     }
   }
 }
 
-// Initial load
+// initial load
 (async function init() {
   await fetchMe();
   await loadRooms(1);
-  loadVisitedPrivateRooms();
+  await loadVisitedPrivateRooms();
 })();

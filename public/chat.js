@@ -13,20 +13,24 @@ const input = document.getElementById("input");
 
 let currentUser = null;
 
-// Fetch current user
+// Fetch current user if logged in (non-fatal)
 async function fetchMe() {
   try {
     const res = await fetch("/api/me");
     const data = await res.json();
     if (data.success) {
       currentUser = data.user;
-      if (currentUser.username) usernameInput.value = currentUser.username;
-      if (currentUser.color) colorInput.value = currentUser.color;
+      if (currentUser.username && usernameInput) usernameInput.value = currentUser.username;
+      if (currentUser.color && colorInput) colorInput.value = currentUser.color;
+    } else {
+      currentUser = null;
     }
-  } catch { currentUser = null; }
+  } catch (err) {
+    currentUser = null;
+  }
 }
 
-// Handle invite link visits
+// If the page was opened via an invite param, resolve it
 async function resolveInviteIfNeeded() {
   if (!roomId && invite) {
     try {
@@ -35,19 +39,39 @@ async function resolveInviteIfNeeded() {
       if (!data.success || !data.room) throw new Error("Room not found");
       roomId = data.room.id;
 
+      // Try to get current user (non-fatal)
       await fetchMe();
 
-      // Save visited private room if logged in
       if (currentUser) {
-        await fetch("/api/users/visit-room", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ roomId })
-        });
+        // If logged in, server already inserted visited room via /api/rooms/:id route and returned visitedPrivateRooms
+        if (data.visitedPrivateRooms) {
+          currentUser.visitedPrivateRooms = data.visitedPrivateRooms;
+        } else {
+          // fallback: ensure server has record (fire-and-forget)
+          fetch("/api/users/visit-room", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roomId })
+          }).catch(() => {});
+        }
+      } else {
+        // anonymous: save locally
+        try {
+          const arr = JSON.parse(localStorage.getItem("visitedPrivateRooms") || "[]");
+          if (!arr.includes(roomId)) {
+            arr.push(roomId);
+            localStorage.setItem("visitedPrivateRooms", JSON.stringify(arr));
+          }
+        } catch (e) {
+          console.error("localStorage write error (invite):", e);
+        }
       }
 
-      if (data.visitedPrivateRooms) currentUser.visitedPrivateRooms = data.visitedPrivateRooms;
+      // Update URL and continue
       window.history.replaceState({}, "", `/chat.html?roomId=${roomId}`);
+
+      // If you have a sidebar on chat page that uses loadVisitedPrivateRooms from rooms.js,
+      // it will use localStorage if currentUser is null.
     } catch (err) {
       console.error("Failed to resolve invite:", err);
       alert("Invalid invite link.");
@@ -56,67 +80,101 @@ async function resolveInviteIfNeeded() {
   }
 }
 
-// Refresh user info (updates visited rooms)
-async function refreshUser() {
-  try {
-    const res = await fetch('/api/me');
-    const data = await res.json();
-    if (data.success) currentUser = data.user;
-  } catch (err) { console.error(err); }
-}
-
-// Add message to DOM
 function addMessageToDOM(msgData) {
   const li = document.createElement("li");
-  li.innerHTML = `<span>[${msgData.time}] </span>
-                  <strong style="color:${msgData.color}">${msgData.username}:</strong>
-                  <span>${msgData.text}</span>`;
+  const meta = document.createElement("span");
+  meta.textContent = `[${msgData.time}] `;
+  const name = document.createElement("strong");
+  name.textContent = msgData.username + ": ";
+  name.style.color = msgData.color || "#000000";
+  const text = document.createElement("span");
+  text.textContent = msgData.text || msgData.content || msgData;
+  li.append(meta, name, text);
   messagesUL.appendChild(li);
   messagesUL.scrollTop = messagesUL.scrollHeight;
 }
 
-// Load room message history
 async function loadHistory() {
   try {
     const res = await fetch(`/api/messages/${roomId}`);
     const data = await res.json();
     if (!data.success) return;
-    messagesUL.innerHTML = '';
-    data.messages.forEach(addMessageToDOM);
-  } catch (err) { console.error(err); }
+    messagesUL.innerHTML = "";
+    data.messages.forEach(m => addMessageToDOM(m));
+  } catch (err) {
+    console.error("Error fetching messages:", err);
+  }
 }
 
-// Load room name
 async function loadRoomName() {
   try {
     const res = await fetch(`/api/rooms/${roomId}`);
     const data = await res.json();
     if (!data.success || !data.room) return;
     roomTitle.textContent = data.room.name;
-  } catch (err) { console.error(err); }
+    // show invite link UI if the element exists
+    const container = document.getElementById('inviteLinkContainer');
+    if (container && data.room.is_private && data.room.invite_code) {
+      const inviteLink = `${window.location.origin}/chat.html?invite=${encodeURIComponent(data.room.invite_code)}`;
+      container.innerHTML = `
+        <strong>Invite Link:</strong>
+        <input type="text" value="${inviteLink}" readonly style="width:60%">
+        <button id="copyInviteBtn">Copy</button>
+      `;
+      const copyBtn = document.getElementById('copyInviteBtn');
+      if (copyBtn) copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(inviteLink);
+          alert('Invite link copied!');
+        } catch {
+          alert('Failed to copy. Try manually selecting the text.');
+        }
+      });
+    }
+  } catch (err) {
+    console.error('Could not load room name:', err);
+  }
 }
 
 // Main init
 (async function init() {
   await resolveInviteIfNeeded();
-  if (!roomId) return window.location.href = "/";
+  if (!roomId) {
+    alert("No room specified");
+    window.location.href = "/";
+    return;
+  }
 
+  // fetchMe is non-fatal, it just pre-fills username if user is logged in
   await fetchMe();
+
   await loadRoomName();
   await loadHistory();
 
   socket.emit("joinRoom", roomId);
 
-  socket.on("chat message", addMessageToDOM);
-
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const username = usernameInput.value.trim() || (currentUser ? currentUser.username : "Anonymous");
-    const color = colorInput.value || (currentUser ? currentUser.color : "#000000");
-    const text = input.value.trim();
-    if (!text) return;
-
-    socket.emit("chat message", { username, color, text, roomId, user_id: currentUser ? currentUser.id : null });
-    input.value = "";
+  socket.on("chat message", (msg) => {
+    addMessageToDOM(msg);
   });
+
+  // submit handler: anonymous users can still type and send messages
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const username = (usernameInput && usernameInput.value.trim()) || (currentUser ? currentUser.username : "Anonymous");
+      const color = (colorInput && colorInput.value) || (currentUser ? currentUser.color : "#000000");
+      const text = input.value.trim();
+      if (!text) return;
+
+      socket.emit("chat message", {
+        username,
+        color,
+        text,
+        roomId,
+        user_id: currentUser ? currentUser.id : null
+      });
+
+      input.value = "";
+    });
+  }
 })();
