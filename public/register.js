@@ -16,18 +16,16 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
       // Start migration in the background (fire-and-forget)
       (async function migrate() {
         try {
-          const localVisited = JSON.parse(localStorage.getItem("visitedPrivateRooms") || "[]");
-          if (localVisited.length) {
-            for (const roomId of localVisited) {
-              // ignore each response — it's best-effort
-              await fetch("/api/users/visit-room", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ roomId })
-              }).catch(() => {});
+          // Migrate local visited private rooms to server (batch)
+            const localVisited = JSON.parse(localStorage.getItem("visitedPrivateRooms") || "[]");
+            if (localVisited.length) {
+                await fetch("/api/users/visit-rooms-batch", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ roomIds: localVisited })
+                }).catch(() => {});
+                localStorage.removeItem("visitedPrivateRooms");
             }
-            localStorage.removeItem("visitedPrivateRooms");
-          }
         } catch (e) {
           // swallow errors so migration never blocks
           console.error("Migration error (register):", e);

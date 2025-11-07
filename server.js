@@ -137,6 +137,29 @@ app.post("/api/logout", (req, res) => {
   res.json({ success: true });
 });
 
+app.post("/api/users/visit-rooms-batch", async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) return res.json({ success: false, error: "Not logged in" });
+
+    const { roomIds } = req.body;
+    if (!Array.isArray(roomIds)) return res.json({ success: false });
+
+    for (const id of roomIds) {
+      await pool.query(
+        `INSERT INTO user_private_rooms (user_id, room_id)
+         VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+        [user.id, id]
+      );
+    }
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error("Error in batch visit-rooms:", e);
+    res.json({ success: false });
+  }
+});
+
 // GET /api/me -> return current user if logged in
 app.get("/api/me", async (req, res) => {
   try {
@@ -335,11 +358,10 @@ io.on("connection", (socket) => {
       const color = msg.color || "#000000";
       const text = msg.text || msg.content || "";
       const roomId = msg.roomId || msg.room_id || msg.room;
-      // user_id optional (client may include), otherwise try to read from cookie in handshake
       let userId = msg.user_id || null;
 
-      // If userId not provided, attempt to read token from socket handshake cookie
-      if (!userId && socket.handshake && socket.handshake.headers && socket.handshake.headers.cookie) {
+      // Try to get userId from cookie token if not provided
+      if (!userId && socket.handshake?.headers?.cookie) {
         const parsed = cookie.parse(socket.handshake.headers.cookie || "");
         const token = parsed[JWT_COOKIE_NAME];
         if (token) {
@@ -348,50 +370,44 @@ io.on("connection", (socket) => {
         }
       }
 
+      // Don’t process empty messages or invalid rooms
       if (!text || !roomId) return;
 
-      // if userId absent, try to upsert a user by username (fallback)
-      if (!userId) {
-        try {
-          const userRes = await pool.query(
-            `INSERT INTO users (username, color) VALUES ($1, $2)
-             ON CONFLICT (username) DO UPDATE SET color = EXCLUDED.color
-             RETURNING id`,
-            [username, color]
-          );
-          userId = userRes.rows[0].id;
-        } catch (uerr) {
-          console.error("user upsert error fallback:", uerr);
-        }
+      // 🔹 Allow anonymous users to send messages WITHOUT creating DB user rows
+      // So we skip this old "upsert user" step unless needed
+      if (userId) {
+        // insert message with user reference
+        await pool.query(
+          `INSERT INTO messages (room_id, user_id, content, timestamp)
+           VALUES ($1, $2, $3, NOW())`,
+          [roomId, userId, text]
+        );
+      } else {
+        // anonymous message, no user_id
+        await pool.query(
+          `INSERT INTO messages (room_id, content, timestamp)
+           VALUES ($1, $2, NOW())`,
+          [roomId, text]
+        );
       }
 
-      // insert message
-      const insert = await pool.query(
-        `INSERT INTO messages (room_id, user_id, content, timestamp)
-         VALUES ($1, $2, $3, NOW())
-         RETURNING id, content, timestamp`,
-        [roomId, userId, text]
-      );
-
-      const saved = insert.rows[0];
+      // prepare outgoing message object
       const outMsg = {
-        id: saved.id,
         username,
         color,
-        text: saved.content,
-        time: new Date(saved.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        text,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         roomId
       };
 
-      // If this message is in a private room and user is logged in, mark visited
+      // 🔹 Only mark private rooms as visited if a logged-in user sent a message
       if (userId) {
         try {
-          // Fetch room type
           const roomRes = await pool.query("SELECT is_private FROM rooms WHERE id = $1 LIMIT 1", [roomId]);
           if (roomRes.rows.length && roomRes.rows[0].is_private) {
-            // Only mark visited if room is private
             await pool.query(
-              "INSERT INTO user_private_rooms (user_id, room_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+              `INSERT INTO user_private_rooms (user_id, room_id)
+               VALUES ($1, $2) ON CONFLICT DO NOTHING`,
               [userId, roomId]
             );
           }
@@ -400,6 +416,7 @@ io.on("connection", (socket) => {
         }
       }
 
+      // 🔹 Broadcast the message to everyone in the room
       io.to(roomId.toString()).emit("chat message", outMsg);
     } catch (err) {
       console.error("socket chat message error:", err);
@@ -410,6 +427,7 @@ io.on("connection", (socket) => {
     console.log("Socket disconnected:", socket.id);
   });
 });
+
 
 // start server
 const PORT = process.env.PORT || 3000;

@@ -16,16 +16,14 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       (async function migrate() {
         try {
           const localVisited = JSON.parse(localStorage.getItem("visitedPrivateRooms") || "[]");
-          if (localVisited.length) {
-            for (const roomId of localVisited) {
-              await fetch("/api/users/visit-room", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ roomId })
-              }).catch(() => {});
+            if (localVisited.length) {
+                await fetch("/api/users/visit-rooms-batch", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ roomIds: localVisited })
+                }).catch(() => {});
+                localStorage.removeItem("visitedPrivateRooms");
             }
-            localStorage.removeItem("visitedPrivateRooms");
-          }
         } catch (e) {
           console.error("Migration error (login):", e);
         }
