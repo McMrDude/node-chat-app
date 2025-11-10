@@ -1,11 +1,13 @@
-body { font-family: Arial, sans-serif; margin: 20px; background-color: #343434;}
+body { font-family: Arial, sans-serif; margin: 20px; background-color: #434343;}
 
 h1, h2, h3 {
     color: white;
+    text-shadow: 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black
 }
 
 #privateRoomsList {
     color: white;
+    background-color: #696969;
     text-shadow: 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black
 }
 
