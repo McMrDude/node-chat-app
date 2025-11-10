@@ -4,11 +4,11 @@ h1, h2, h3 {
     color: white;
 }
 
-#roomName {
-    width: 200px;
+#privateRoomsList {
+    color: white;
 }
 
-#rooms { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top: 12px; }
+#rooms { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top: 12px; color: white;}
 
 .room { padding: 10px; border: 1px solid #ccc; cursor: pointer; text-align: center; min-height: 48px; display:flex; align-items:center; justify-content:center; }
 
