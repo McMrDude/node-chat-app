@@ -6,6 +6,7 @@ h1, h2, h3 {
 
 #privateRoomsList {
     color: white;
+    text-shadow: 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black, 0 0 4px black
 }
 
 #rooms { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top: 12px; color: white;}
