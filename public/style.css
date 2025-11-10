@@ -41,3 +41,6 @@ input[type=text] { flex: 1; padding: 5px; }
 
 #userRow { margin-bottom: 8px; display:flex; gap:8px; align-items:center; }
 
+#inviteLinkContainer {
+    color: white;
+}
