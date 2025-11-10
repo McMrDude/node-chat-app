@@ -325,7 +325,7 @@ app.get("/api/messages/:roomId", async (req, res) => {
     const messages = q.rows.map(row => ({
       id: row.id,
       text: row.content,
-      time: row.timestamp ? new Date(row.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
+      time: row.timestamp ? new Date(row.timestamp).toLocaleTimeString([], { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "",
       username: row.username || "Anonymous",
       color: row.color || "#000000"
     }));
@@ -421,7 +421,7 @@ io.on("connection", (socket) => {
         username,
         color,
         text,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        time: new Date().toLocaleTimeString([], { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
         roomId
       };
 
