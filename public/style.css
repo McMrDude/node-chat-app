@@ -2,13 +2,13 @@ body { font-family: Arial, sans-serif; margin: 20px; background-color: #434343;}
 
 h1, h2, h3 {
     color: white;
-    text-shadow: 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363
+    text-shadow: 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080
 }
 
 #privateRoomsList {
     color: white;
     background-color: #696969;
-    text-shadow: 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363
+    text-shadow: 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080
 }
 
 #rooms { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top: 12px; color: white;}
@@ -41,7 +41,7 @@ h1, h2, h3 {
 
 #messages { 
     list-style-type: none; padding: 0; height: 400px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white;
-    text-shadow: 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363, 0 0 4px #636363
+    text-shadow: 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080, 0 0 4px #808080
 }
 
 li { margin: 5px 0; }
