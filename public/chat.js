@@ -84,14 +84,41 @@ function addMessageToDOM(msgData) {
   const li = document.createElement("li");
   const meta = document.createElement("span");
   meta.textContent = `[${msgData.time}] `;
+
+  // Username element
   const name = document.createElement("strong");
   name.textContent = msgData.username + ": ";
-  name.style.color = msgData.color || "#000000";
+  const userColor = msgData.color || "#000000";
+  name.style.color = userColor;
+
+  // Calculate brightness of user color (0–255)
+  const brightness = getBrightness(userColor);
+
+  // Choose shadow color based on brightness
+  const shadowColor = brightness > 130 ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.6)";
+  name.style.textShadow = `0 0 4px ${shadowColor}, 0 0 8px ${shadowColor}`;
+
+  // Message text (always white in your dark theme)
   const text = document.createElement("span");
   text.textContent = msgData.text || msgData.content || msgData;
+  text.style.color = "white";
+  text.style.textShadow = "0 0 4px rgba(0,0,0,0.8)";
+
   li.append(meta, name, text);
   messagesUL.appendChild(li);
   messagesUL.scrollTop = messagesUL.scrollHeight;
+}
+
+// Utility: get brightness (approximation)
+function getBrightness(hexColor) {
+  // Normalize 3- or 6-digit hex (#fff or #ffffff)
+  const c = hexColor.replace("#", "");
+  const fullHex = c.length === 3 ? c.split("").map(x => x + x).join("") : c;
+  const r = parseInt(fullHex.substring(0, 2), 16);
+  const g = parseInt(fullHex.substring(2, 4), 16);
+  const b = parseInt(fullHex.substring(4, 6), 16);
+  // Perceived brightness formula
+  return (r * 299 + g * 587 + b * 114) / 1000;
 }
 
 async function loadHistory() {
