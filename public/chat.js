@@ -95,7 +95,7 @@ function addMessageToDOM(msgData) {
   const brightness = getBrightness(userColor);
 
   // Choose shadow color based on brightness
-  const shadowColor = brightness > 130 ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.6)";
+  const shadowColor = brightness > 130 ? "rgba(0, 0, 0, 1)" : "rgba(255, 255, 255, 1)";
   name.style.textShadow = `0 0 4px ${shadowColor}, 0 0 8px ${shadowColor}`;
 
   // Message text (always white in your dark theme)
