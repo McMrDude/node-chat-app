@@ -1,4 +1,4 @@
-body { font-family: Arial, sans-serif; margin: 20px; background-color: #3c3c3c;}
+body { font-family: Arial, sans-serif; margin: 20px; background-color: #282828;}
 
 #rooms { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top: 12px; }
 
@@ -28,7 +28,7 @@ body { font-family: Arial, sans-serif; margin: 20px; background-color: #3c3c3c;}
 
 .invite-modal input[type="text"] { width: 100%; padding:6px; margin-bottom:8px; }
 
-#messages { list-style-type: none; padding: 0; height: 400px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #888888; color: white}
+#messages { list-style-type: none; padding: 0; height: 400px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white}
 
 li { margin: 5px 0; }
 
