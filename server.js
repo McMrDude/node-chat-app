@@ -238,7 +238,7 @@ app.get("/api/rooms", async (req, res) => {
   const offset = (page - 1) * PAGE_SIZE;
   try {
     const countRes = await pool.query("SELECT COUNT(*) FROM rooms WHERE is_private = FALSE");
-    const total = parseInt(countRes.rows[0].count, 10) || 0;
+    const total = parseInt(countRes.rows[0].count, 3) || 0;
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
     const roomsRes = await pool.query(
       `SELECT id, name, is_private, invite_code, created_at
