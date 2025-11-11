@@ -15,7 +15,8 @@ h1, h2, h3 {
 
 #rooms div {
     margin: 15px;
-    height: 100%;
+    margin-top: 15px;
+    height: 150%;
     background-color: #696969;
 }
 
