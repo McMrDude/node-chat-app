@@ -9,7 +9,7 @@ h1, h2, h3 {
     background-color: #696969;
 }
 
-#rooms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; color: white; border: 1px solid blue; height: 80vh;}
+#rooms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; color: white; border: 1px solid blue; height: 70vh;}
 
 .room { padding: 10px; border: 1px solid #ccc; cursor: pointer; text-align: center; min-height: 48px; display:flex; align-items:center; justify-content:center; }
 
