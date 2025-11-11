@@ -14,7 +14,8 @@ h1, h2, h3 {
 .room { padding: 10px; border: 1px solid #ccc; cursor: pointer; text-align: center; min-height: 48px; display:flex; align-items:center; justify-content:center; }
 
 #rooms div {
-    flex-basis: 33vw;
+    flex-basis: 33%;
+    width: 20vw;
     background-color: #696969;
 }
 
