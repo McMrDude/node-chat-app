@@ -137,29 +137,28 @@ app.post("/api/logout", (req, res) => {
   res.json({ success: true });
 });
 
+// server.js — add this route near your other /api routes
 app.post("/api/update-identity", async (req, res) => {
   try {
-    const token = req.cookies[JWT_COOKIE_NAME];
-    if (!token) return res.json({ success: false, error: "Not logged in" });
+    const user = await getUserFromRequest(req);
+    if (!user) return res.status(401).json({ success: false, error: "Not authenticated" });
 
-    const payload = verifyToken(token);
-    if (!payload || !payload.id)
-      return res.json({ success: false, error: "Invalid token" });
-    
     const { username, color } = req.body;
-    if (!username, color)
-      return res.json({ success: false, error: "Missing data" });
+    if (!username || typeof username !== "string") {
+      return res.status(400).json({ success: false, error: "username required" });
+    }
+    // basic color validation (hex)
+    const colorVal = (typeof color === "string" && /^#?[0-9A-Fa-f]{6}$/.test(color)) ? (color.startsWith("#") ? color : `#${color}`) : null;
 
-    // Update username and color
     await pool.query(
       "UPDATE users SET username = $1, color = $2 WHERE id = $3",
-      [username, color, payload.id]
+      [username, colorVal || "#000000", user.id]
     );
 
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err) {
     console.error("Update-identity error:", err);
-    res.status(500).json({ success: false, error: "Server error" });
+    return res.status(500).json({ success: false, error: "server error" });
   }
 });
 
