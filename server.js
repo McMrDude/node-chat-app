@@ -137,6 +137,32 @@ app.post("/api/logout", (req, res) => {
   res.json({ success: true });
 });
 
+app.post("/api/update-identity", async (req, res) => {
+  try {
+    const token = req.cookies[JWT_COOKIE_NAME];
+    if (!token) return res.json({ success: false, error: "Not logged in" });
+
+    const payload = verifyToken(token);
+    if (!payload || !payload.id)
+      return res.json({ success: false, error: "Invalid token" });
+    
+    const { username, color } = req.body;
+    if (!username, color)
+      return res.json({ success: false, error: "Missing data" });
+
+    // Update username and color
+    await pool.query(
+      "UPDATE users SET username = $1, color = $2 WHERE id = $3",
+      [username, color, payload.id]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Update-identity error:", err);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+});
+
 // server.js — add this route
 app.post("/api/users/visit-rooms-batch", async (req, res) => {
   try {

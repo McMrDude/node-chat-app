@@ -13,6 +13,36 @@ const input = document.getElementById("input");
 
 let currentUser = null;
 
+document.getElementById("updateIdentity").addEventListener("click", async () => {
+  const newName = document.getElementById("username").value.trim();
+  const newColor = document.getElementById("color").value;
+
+  if (!newName) return alert("Please enter a name");
+
+  // Always save locally
+  localStorage.setItem("username", newName);
+  localStorage.setItem("color", newColor);
+
+  // Try to update account if looged in
+  try {
+    const res = await fetch("/api/update-identity", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: newName, color: newColor }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      console.log("Identity updated in DB");
+    } else {
+      console.log("Local update only (not logged in)");
+    }
+  } catch (err) {
+    console.error("Identity update failed", err);
+  }
+
+  alert("Name and color updated!");
+})
+
 // Fetch current user if logged in (non-fatal)
 async function fetchMe() {
   try {
@@ -96,13 +126,13 @@ function addMessageToDOM(msgData) {
 
   // Choose shadow color based on brightness
   const shadowColor = brightness > 90 ? "rgba(0, 0, 0, 1)" : "rgba(255, 255, 255, 1)";
-  name.style.textShadow = `0 0 4px ${shadowColor}, 0 0 4px ${shadowColor}`;
+  name.style.textShadow = `0 0 2px ${shadowColor}, 0 0 2px ${shadowColor}`;
 
   // Message text (always white in your dark theme)
   const text = document.createElement("span");
   text.textContent = msgData.text || msgData.content || msgData;
   text.style.color = "white";
-  text.style.textShadow = "0 0 4px rgba(0,0,0,0.8)";
+  text.style.textShadow = "0 0 2px rgba(0,0,0,0.8)";
 
   li.append(meta, name, text);
   messagesUL.appendChild(li);
