@@ -33,6 +33,7 @@ async function loadRooms(page = 1) {
     } else {
       data.rooms.forEach((room) => {
         const div = document.createElement('div');
+        div.id = "publicRoom";
         div.className = 'room';
         div.textContent = room.name;
         div.onclick = () => visitRoom(room.id);

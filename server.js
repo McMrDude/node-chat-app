@@ -234,7 +234,7 @@ app.post("/api/users/visit-room", async (req, res) => {
 // GET paginated public rooms
 app.get("/api/rooms", async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
-  const PAGE_SIZE = 6;
+  const PAGE_SIZE = 12;
   const offset = (page - 1) * PAGE_SIZE;
   try {
     const countRes = await pool.query("SELECT COUNT(*) FROM rooms WHERE is_private = FALSE");
