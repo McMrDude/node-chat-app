@@ -15,7 +15,6 @@ h1, h2, h3 {
 
 #publicRoom {
     width: 33%;
-    flex-basis: 33%;
     background-color: #696969;
 }
 
