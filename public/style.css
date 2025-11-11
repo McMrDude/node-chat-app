@@ -16,6 +16,7 @@ h1, h2, h3 {
 .publicRoom {
     height: 5000px;
     width: 5000px;
+    background-color: #696969;
 }
 
 #pagination { margin-top: 20px; }
