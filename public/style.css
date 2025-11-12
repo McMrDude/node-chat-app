@@ -6,7 +6,19 @@ h1, h2, h3 {
 
 #privateRoomsList {
     color: white;
+}
+
+#privateRoomsList div {
     background-color: #696969;
+    transition: 0.3s;
+}
+
+#privateRoomsList div:hover {
+    background-color: #595959;
+}
+
+#privateRoomsList div:hover {
+    background-color: #444444;
 }
 
 #rooms { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 12px; color: white; border: 1px solid blue; height: 70vh;}
