@@ -21,11 +21,13 @@ h1, h2, h3 {
 }
 
 #rooms div:hover {
-    transform: scale(1.1);
+    transform: scale(1.05);
+    background-color: #595959;
 }
 
 #rooms div:active {
-    transform: scale(0.9);
+    transform: scale(0.95);
+    background-color: #444444;
 }
 
 #pagination { margin-top: 20px; }
