@@ -17,14 +17,15 @@ h1, h2, h3 {
     width: 66%;
     height: 75%;
     background-color: #696969;
+    transition: 0.3s;
 }
 
 #rooms div:hover {
-    transition: scale(1.2);
+    transform: scale(1.2);
 }
 
 #rooms div:active {
-    transition: scale(0.9);
+    transform: scale(0.9);
 }
 
 #pagination { margin-top: 20px; }
