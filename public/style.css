@@ -23,7 +23,7 @@ h1, h2, h3 {
     background-color: #444444;
 }
 
-#rooms { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 12px; color: white; border: 1px solid blue; height: 70vh;}
+#rooms { display: grid; grid-template-columns: repeat(3); margin-top: 12px; color: white; border: 1px solid blue; height: 70vh;}
 
 .room { padding: 10px; border: 1px solid #ccc; cursor: pointer; text-align: center; min-height: 48px; display:flex; align-items:center; justify-content:center; }
 
