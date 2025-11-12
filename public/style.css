@@ -20,11 +20,11 @@ h1, h2, h3 {
 }
 
 #rooms div:hover {
-    transform: scale(1.2);
+    transition: scale(1.2);
 }
 
 #rooms div:active {
-    transform: scale(0.9);
+    transition: scale(0.9);
 }
 
 #pagination { margin-top: 20px; }
