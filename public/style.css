@@ -14,10 +14,12 @@ h1, h2, h3 {
 }
 
 #privateRoomsList div:hover {
+    transform: scale(1.02);
     background-color: #595959;
 }
 
 #privateRoomsList div:active {
+    transform: scale(0.98);
     background-color: #444444;
 }
 
