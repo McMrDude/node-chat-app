@@ -17,7 +17,7 @@ h1, h2, h3 {
     background-color: #595959;
 }
 
-#privateRoomsList div:hover {
+#privateRoomsList div:active {
     background-color: #444444;
 }
 
