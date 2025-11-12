@@ -21,7 +21,7 @@ h1, h2, h3 {
 }
 
 #rooms div:hover {
-    transform: scale(1.2);
+    transform: scale(1.1);
 }
 
 #rooms div:active {
