@@ -235,3 +235,28 @@ async function loadRoomName() {
     });
   }
 })();
+
+// --- Delete Room Button ---
+const deleteRoomBtn = document.getElementById("deleteRoomBtn");
+if (deleteRoomBtn) {
+  deleteRoomBtn.addEventListener("click", async () => {
+    if (!roomId) return alert("No room specified.");
+    const confirmDelete = confirm("Are you sure you want to delete this room?");
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch(`/api/rooms/${roomId}`, { method: "DELETE" });
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Room deleted successfully!");
+        window.location.href = "/"; // back to homepage
+      } else {
+        alert("Failed to delete room: " + (data.error || "unknown error"));
+      }
+    } catch (err) {
+      console.error("Delete room failed:", err);
+      alert("Error deleting room.");
+    }
+  });
+}
