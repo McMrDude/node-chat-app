@@ -10,7 +10,10 @@ const colorInput = document.getElementById("color");
 const messagesUL = document.getElementById("messages");
 const form = document.getElementById("form");
 const input = document.getElementById("input");
+const uploadBtn = document.getElementById("uploadBtn");
+const imageInput = document.getElementById("imageInput");
 
+let attachedImageFile = null;
 let currentUser = null;
 
 document.getElementById("updateIdentity").addEventListener("click", async () => {
@@ -110,12 +113,54 @@ async function resolveInviteIfNeeded() {
   }
 }
 
+// When you click +, open file picker
+uploadBtn.addEventListener("click", () => imageInput.click());
+
+// When a file is chosen
+imageInput.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) return alert("Please select an image file.");
+  attachedImageFile = file;
+  alert(`Attached: ${file.name}`);
+});
+
+input.addEventListener("paste", async (event) => {
+  const items = event.clipboardData.items;
+
+  for (let item of items) {
+    if (item.type.startsWith("image/")) {
+      // User pasted an actual image file
+      attachedImageFile = item.getAsFile();
+      alert(`Attached image from clipboard.`);
+      return;
+    }
+  }
+
+  // If they pasted text that looks like an image link
+  const text = event.clipboardData.getData("text");
+  if (text.match(/\.(jpeg|jpg|png|gif|webp)$/i)) {
+    // Send message with image link direclty
+    socket.emit("chat message", {
+      username: usernameInput.value.trim() || "Anonymous",
+      color: colorInput.value,
+      text: "",
+      imageUrl: text,
+      roomId,
+      user_id: currentUser ? currentUser.id : null
+    });
+  }
+});
+
 function addMessageToDOM(msgData) {
   const li = document.createElement("li");
+
+  // Timestamp
   const meta = document.createElement("span");
   meta.textContent = `[${msgData.time}] `;
 
-  // Username element
+
+  // Username
   const name = document.createElement("strong");
   name.textContent = msgData.username + ": ";
   const userColor = msgData.color || "#000000";
@@ -134,7 +179,24 @@ function addMessageToDOM(msgData) {
   text.style.color = "white";
   text.style.textShadow = "0 0 2px rgba(0,0,0,0.8)";
 
+  // Append text elements
   li.append(meta, name, text);
+
+  // If message contains an image
+  if (msgData.imageUrl) {
+    const img = document.createElement("img");
+    img.src = msgData.imageUrl;
+    img.alt = "semt image";
+    img.loading = "lazy";
+    img.style.display = "block";
+    img.style.maxWidth = "250px";
+    img.style.borderRadius = "8px";
+    img.style.marginTop = "6px";
+    img.style.boxShadow = "0 0 4px rgb(0,0,0,0.5";
+    li.appendChild(img);
+  }
+
+  // Append to message list
   messagesUL.appendChild(li);
   messagesUL.scrollTop = messagesUL.scrollHeight;
 }
@@ -216,22 +278,38 @@ async function loadRoomName() {
 
   // submit handler: anonymous users can still type and send messages
   if (form) {
-    form.addEventListener("submit", (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const username = (usernameInput && usernameInput.value.trim()) || (currentUser ? currentUser.username : "Anonymous");
-      const color = (colorInput && colorInput.value) || (currentUser ? currentUser.color : "#000000");
       const text = input.value.trim();
-      if (!text) return;
+      if (!text && !attachedImageFile) return;
 
-      socket.emit("chat message", {
-        username,
-        color,
+      let imageUrl = null;
+
+      // If there’s an attached file, upload it first
+      if (attachedImageFile) {
+        const formData = new FormData();
+        formData.append('image', attachedImageFile);
+
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success) imageUrl = data.url;
+        attachedImageFile = null;
+        imageInput.value = ''; // reset
+      }
+
+      socket.emit('chat message', {
+        username: usernameInput.value.trim() || (currentUser ? currentUser.username : 'Anonymous'),
+        color: colorInput.value || (currentUser ? currentUser.color : '#000000'),
         text,
+        imageUrl,
         roomId,
         user_id: currentUser ? currentUser.id : null
       });
 
-      input.value = "";
+      input.value = '';
     });
   }
 })();

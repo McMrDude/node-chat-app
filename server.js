@@ -27,6 +27,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+const multer = require("multer");
+const upload = multer({
+  dest: "uploads/",
+  limits: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only images allowed"));
+  }
+});
+
+app.use("/uploads", express.static("uploads")); // server uploaded files
+
 // Helper: generate invite codes
 function makeInviteCode(length = 10) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -160,6 +171,12 @@ app.post("/api/update-identity", async (req, res) => {
     console.error("Update-identity error:", err);
     return res.status(500).json({ success: false, error: "server error" });
   }
+});
+
+app.post("/api/upload", upload.single("image"), (req, res) => {
+  if (!req.file) return res.json({ success: false, error: "No file uploaded" });
+  const fileUrl = `/uploads/${req.file.filename}`;
+  res.json({ success: true, url: fileUrl });
 });
 
 // server.js — add this route
