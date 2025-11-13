@@ -287,17 +287,33 @@ async function loadRoomName() {
 
       // If there’s an attached file, upload it first
       if (attachedImageFile) {
-        const formData = new FormData();
-        formData.append('image', attachedImageFile);
+        try {
+          const formData = new FormData();
+          formData.append('image', attachedImageFile);
 
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-        const data = await res.json();
-        if (data.success) imageUrl = data.url;
-        attachedImageFile = null;
-        imageInput.value = ''; // reset
+          const uploadResp = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+          });
+
+          const uploadData = await uploadResp.json();
+          if (!uploadData.success || !uploadData.url) {
+            console.error("Upload failed:", uploadData);
+            alert("Image upload failed. Try a smaller image or different file.");
+            // clear attachment so it doesn't block next messages
+            attachedImageFile = null;
+            imageInput.value = '';
+          } else {
+            imageUrl = uploadData.url;
+            attachedImageFile = null;
+            imageInput.value = '';
+          }
+        } catch (err) {
+          console.error("Upload error:", err);
+          alert("Image upload error.");
+          attachedImageFile = null;
+          imageInput.value = '';
+        }
       }
 
       socket.emit('chat message', {

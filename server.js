@@ -28,11 +28,14 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 const multer = require("multer");
+
+// store files in uploads/ with random filenames (default behavior)
 const upload = multer({
   dest: "uploads/",
-  limits: (req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) cb(null, true);
-    else cb(new Error("Only images allowed"));
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype && file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only image files are allowed"));
   }
 });
 
@@ -437,32 +440,34 @@ io.on("connection", (socket) => {
         }
       }
 
-      // Don’t process empty messages or invalid rooms
-      if (!text || !roomId) return;
+      // extract imageUrl from client if present
+      const imageUrl = msg.imageUrl || null;
 
-      // 🔹 Allow anonymous users to send messages WITHOUT creating DB user rows
-      // So we skip this old "upsert user" step unless needed
+// Don’t process empty messages or invalid rooms (allow image-only messages)
+      if (!text && !imageUrl) return;
+      if (!roomId) return;
+
+      // Insert message into DB, including image_url (you may need to add this column — see note)
       if (userId) {
-        // insert message with user reference
         await pool.query(
-          `INSERT INTO messages (room_id, user_id, content, timestamp)
-           VALUES ($1, $2, $3, NOW())`,
-          [roomId, userId, text]
+          `INSERT INTO messages (room_id, user_id, content, image_url, timestamp)
+          VALUES ($1, $2, $3, $4, NOW())`,
+          [roomId, userId, text, imageUrl]
         );
       } else {
-        // anonymous message, no user_id
         await pool.query(
-          `INSERT INTO messages (room_id, content, timestamp)
-           VALUES ($1, $2, NOW())`,
-          [roomId, text]
+          `INSERT INTO messages (room_id, content, image_url, timestamp)
+          VALUES ($1, $2, $3, NOW())`,
+          [roomId, text, imageUrl]
         );
       }
 
-      // prepare outgoing message object
+      // Prepare outgoing message object — include imageUrl so clients can render it immediately
       const outMsg = {
         username,
         color,
         text,
+        imageUrl,
         time: new Date().toLocaleTimeString([], { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
         roomId
       };
