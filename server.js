@@ -7,17 +7,17 @@ const cors = require("cors");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cookie = require("cookie");
+const { Pool } = require("pg");
+const { createClient } = require('@supabase/supabase-js');
+const multer = require('multer');
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me"; // set securely in Render
 const JWT_COOKIE_NAME = "token";
-
-const { Pool } = require("pg");
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
-
 
 const app = express();
 const server = http.createServer(app);
@@ -27,21 +27,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-const multer = require("multer");
+// --------------------
+// Supabase setup
+// --------------------
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-// store files in uploads/ with random filenames (default behavior)
-const upload = multer({
-  dest: "uploads/",
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype && file.mimetype.startsWith("image/")) cb(null, true);
-    else cb(new Error("Only image files are allowed"));
-  }
-});
-
-app.use("/uploads", express.static("uploads")); // server uploaded files
-
-// Helper: generate invite codes
+// --------------------
+// Helpers
+// --------------------
 function makeInviteCode(length = 10) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let s = "";
@@ -49,11 +43,8 @@ function makeInviteCode(length = 10) {
   return s;
 }
 
-// --------------------
-// AUTH HELPERS
-// --------------------
 function signToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "30d" }); // expires in 30 days
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "30d" });
 }
 
 function verifyToken(token) {
@@ -64,7 +55,6 @@ function verifyToken(token) {
   }
 }
 
-// middleware to get auth from cookie
 async function getUserFromRequest(req) {
   try {
     const raw = req.headers.cookie;
@@ -74,7 +64,6 @@ async function getUserFromRequest(req) {
     if (!token) return null;
     const data = verifyToken(token);
     if (!data || !data.id) return null;
-    // fetch fresh user info
     const q = await pool.query("SELECT id, username, color FROM users WHERE id = $1 LIMIT 1", [data.id]);
     if (!q.rows.length) return null;
     return q.rows[0];
@@ -87,8 +76,6 @@ async function getUserFromRequest(req) {
 // --------------------
 // AUTH ROUTES
 // --------------------
-
-// Register: username + password (no email)
 app.post("/api/register", async (req, res) => {
   try {
     const { username, password, color } = req.body;
@@ -104,19 +91,16 @@ app.post("/api/register", async (req, res) => {
       httpOnly: true,
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 30 // 30 days
+      maxAge: 60 * 60 * 24 * 30
     }));
     res.json({ success: true, user });
   } catch (err) {
-    if (err.code === "23505") { // unique violation
-      return res.status(400).json({ success: false, error: "username already taken" });
-    }
+    if (err.code === "23505") return res.status(400).json({ success: false, error: "username already taken" });
     console.error("register error:", err);
     res.status(500).json({ success: false, error: "server error" });
   }
 });
 
-// Login
 app.post("/api/login", async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -131,7 +115,7 @@ app.post("/api/login", async (req, res) => {
       httpOnly: true,
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 30 // 30 days
+      maxAge: 60 * 60 * 24 * 30
     }));
     res.json({ success: true, user: { id: user.id, username: user.username, color: user.color } });
   } catch (err) {
@@ -140,7 +124,6 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// Logout
 app.post("/api/logout", (req, res) => {
   res.setHeader("Set-Cookie", cookie.serialize(JWT_COOKIE_NAME, "", {
     httpOnly: true,
@@ -151,107 +134,51 @@ app.post("/api/logout", (req, res) => {
   res.json({ success: true });
 });
 
-// server.js — add this route near your other /api routes
+// Update username/color
 app.post("/api/update-identity", async (req, res) => {
   try {
     const user = await getUserFromRequest(req);
     if (!user) return res.status(401).json({ success: false, error: "Not authenticated" });
 
     const { username, color } = req.body;
-    if (!username || typeof username !== "string") {
-      return res.status(400).json({ success: false, error: "username required" });
-    }
-    // basic color validation (hex)
+    if (!username || typeof username !== "string") return res.status(400).json({ success: false, error: "username required" });
     const colorVal = (typeof color === "string" && /^#?[0-9A-Fa-f]{6}$/.test(color)) ? (color.startsWith("#") ? color : `#${color}`) : null;
 
-    await pool.query(
-      "UPDATE users SET username = $1, color = $2 WHERE id = $3",
-      [username, colorVal || "#000000", user.id]
-    );
-
-    return res.json({ success: true });
-  } catch (err) {
-    console.error("Update-identity error:", err);
-    return res.status(500).json({ success: false, error: "server error" });
-  }
-});
-
-app.post("/api/upload", upload.single("image"), (req, res) => {
-  if (!req.file) return res.json({ success: false, error: "No file uploaded" });
-  const fileUrl = `/uploads/${req.file.filename}`;
-  res.json({ success: true, url: fileUrl });
-});
-
-// server.js — add this route
-app.post("/api/users/visit-rooms-batch", async (req, res) => {
-  try {
-    const user = await getUserFromRequest(req);
-    if (!user) return res.status(401).json({ success: false, error: "Not authenticated" });
-
-    const { roomIds } = req.body;
-    if (!Array.isArray(roomIds) || roomIds.length === 0) {
-      return res.json({ success: true, inserted: 0 });
-    }
-
-    // Build a parameterized multi-row insert: (user.id, $1), (user.id, $2), ...
-    const values = [];
-    const params = [];
-    let paramIdx = 1;
-    for (const rid of roomIds) {
-      params.push(`($${paramIdx}, $${paramIdx + 1})`);
-      values.push(user.id, rid);
-      paramIdx += 2;
-    }
-
-    const sql = `
-      INSERT INTO user_private_rooms (user_id, room_id)
-      VALUES ${params.join(", ")}
-      ON CONFLICT DO NOTHING
-    `;
-    await pool.query(sql, values);
-
-    return res.json({ success: true });
-  } catch (err) {
-    console.error("visit-rooms-batch error:", err);
-    return res.status(500).json({ success: false, error: "server error" });
-  }
-});
-
-// GET /api/me -> return current user if logged in
-app.get("/api/me", async (req, res) => {
-  try {
-    const user = await getUserFromRequest(req);
-    if (!user) return res.json({ success: false });
-    // also load visited private rooms ids
-    const v = await pool.query("SELECT room_id FROM user_private_rooms WHERE user_id = $1", [user.id]);
-    const visited = v.rows.map(r => r.room_id);
-    res.json({ success: true, user: { ...user, visitedPrivateRooms: visited } });
-  } catch (err) {
-    console.error("me error:", err);
-    res.status(500).json({ success: false, error: "server error" });
-  }
-});
-
-// Save a visited private room for a logged-in user
-app.post("/api/users/visit-room", async (req, res) => {
-  try {
-    const user = await getUserFromRequest(req);
-    if (!user) return res.status(401).json({ success: false, error: "not authenticated" });
-    const { roomId } = req.body;
-    if (!roomId) return res.status(400).json({ success: false, error: "roomId required" });
-    await pool.query("INSERT INTO user_private_rooms (user_id, room_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [user.id, roomId]);
+    await pool.query("UPDATE users SET username = $1, color = $2 WHERE id = $3", [username, colorVal || "#000000", user.id]);
     res.json({ success: true });
   } catch (err) {
-    console.error("visit-room error:", err);
+    console.error("Update-identity error:", err);
     res.status(500).json({ success: false, error: "server error" });
   }
 });
 
 // --------------------
-// ROOMS & MESSAGES API (existing behavior, slight tweaks)
+// IMAGE UPLOAD
 // --------------------
+app.post('/api/upload', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, error: 'No file uploaded' });
 
-// GET paginated public rooms
+    const ext = (req.file.originalname.split('.').pop() || 'jpg').toLowerCase();
+    const fileName = `images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from(process.env.SUPABASE_BUCKET)
+      .upload(fileName, req.file.buffer, { contentType: req.file.mimetype, upsert: false });
+
+    if (error) throw error;
+
+    const { publicURL } = supabase.storage.from(process.env.SUPABASE_BUCKET).getPublicUrl(fileName);
+    res.json({ success: true, url: publicURL });
+  } catch (err) {
+    console.error("Supabase upload error:", err);
+    res.status(500).json({ success: false, error: 'upload failed' });
+  }
+});
+
+// --------------------
+// ROOMS & MESSAGES API
+// --------------------
 app.get("/api/rooms", async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const PAGE_SIZE = 12;
@@ -275,7 +202,6 @@ app.get("/api/rooms", async (req, res) => {
   }
 });
 
-// Create room
 app.post("/api/rooms", async (req, res) => {
   try {
     const { name, is_private } = req.body;
@@ -283,7 +209,6 @@ app.post("/api/rooms", async (req, res) => {
     let invite_code = null;
     if (is_private) {
       invite_code = makeInviteCode(12);
-      // ensure unique
       let exists = true;
       while (exists) {
         const q = await pool.query("SELECT 1 FROM rooms WHERE invite_code = $1 LIMIT 1", [invite_code]);
@@ -298,7 +223,6 @@ app.post("/api/rooms", async (req, res) => {
       [name, !!is_private, invite_code]
     );
     const room = insert.rows[0];
-    // If user is logged in and room was created private, add to visited list
     const user = await getUserFromRequest(req);
     if (user && room.is_private) {
       await pool.query("INSERT INTO user_private_rooms (user_id, room_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [user.id, room.id]);
@@ -310,52 +234,6 @@ app.post("/api/rooms", async (req, res) => {
   }
 });
 
-// Resolve room by id or invite code
-app.get("/api/rooms/:idOrCode", async (req, res) => {
-  try {
-    const { idOrCode } = req.params;
-
-    // 1️⃣ Fetch the room
-    const result = await pool.query(
-      `SELECT id, name, is_private, invite_code FROM rooms WHERE id::text = $1 OR invite_code = $1 LIMIT 1`,
-      [idOrCode]
-    );
-
-    if (!result.rows.length) return res.status(404).json({ success: false, error: "Room not found" });
-
-    const room = result.rows[0];
-
-    // 2️⃣ Fetch the logged-in user
-    const user = await getUserFromRequest(req);
-
-    // 3️⃣ Mark as visited if private
-    if (user && room.is_private) {
-      await pool.query(
-        `INSERT INTO user_private_rooms (user_id, room_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-        [user.id, room.id]
-      );
-
-      const visitedRes = await pool.query(
-        `SELECT room_id FROM user_private_rooms WHERE user_id = $1`,
-        [user.id]
-      );
-
-      const visitedRooms = visitedRes.rows.map(r => r.room_id);
-
-      // 4️⃣ Return room + visited rooms to client
-      return res.json({ success: true, room, visitedPrivateRooms: visitedRooms });
-    }
-
-    // 5️⃣ If room is not private or user not logged in
-    return res.json({ success: true, room });
-
-  } catch (err) {
-    console.error("resolve room error:", err);
-    res.status(500).json({ success: false, error: "db error" });
-  }
-});
-
-// Room messages history (INCLUDES image_url now)
 app.get("/api/messages/:roomId", async (req, res) => {
   const { roomId } = req.params;
   try {
@@ -382,20 +260,6 @@ app.get("/api/messages/:roomId", async (req, res) => {
   }
 });
 
-// Delete room (and its messages)
-app.delete("/api/rooms/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    await pool.query("DELETE FROM messages WHERE room_id = $1", [id]);
-    await pool.query("DELETE FROM user_private_rooms WHERE room_id = $1", [id]);
-    await pool.query("DELETE FROM rooms WHERE id = $1", [id]);
-    res.json({ success: true });
-  } catch (err) {
-    console.error("delete room error:", err);
-    res.status(500).json({ success: false, error: "db error" });
-  }
-});
-
 // --------------------
 // SOCKET.IO CHAT
 // --------------------
@@ -405,20 +269,16 @@ io.on("connection", (socket) => {
   socket.on("joinRoom", (roomId) => {
     if (!roomId) return;
     socket.join(roomId.toString());
-    console.log(`Socket ${socket.id} joined room ${roomId}`);
   });
 
-  // messages coming from client
   socket.on("chat message", async (msg) => {
     try {
-      // payload: { username, color, text, roomId, (optional) user_id, imageUrl }
       const username = (msg.username || "Anonymous").trim();
       const color = msg.color || "#000000";
       const text = msg.text || msg.content || "";
       const roomId = msg.roomId || msg.room_id || msg.room;
       let userId = msg.user_id || null;
 
-      // Try to get userId from cookie token if not provided
       if (!userId && socket.handshake?.headers?.cookie) {
         const parsed = cookie.parse(socket.handshake.headers.cookie || "");
         const token = parsed[JWT_COOKIE_NAME];
@@ -428,42 +288,24 @@ io.on("connection", (socket) => {
         }
       }
 
-      if (userId) {
-        try {
-          const check = await pool.query("SELECT 1 FROM users WHERE id = $1", [userId]);
-          if (check.rows.length === 0) {
-            console.warn(`user_id ${userId} not found in users table — treating as anonymous`);
-            userId = null;
-          }
-        } catch (err) {
-          console.error("User existence check failed:", err);
-          userId = null;
-        }
-      }
-
-      // extract imageUrl from client if present
       const imageUrl = msg.imageUrl || null;
-
-      // Don’t process empty messages or invalid rooms (allow image-only messages)
       if (!text && !imageUrl) return;
       if (!roomId) return;
 
-      // Insert message into DB, including image_url (you may need to add this column — see note)
       if (userId) {
         await pool.query(
           `INSERT INTO messages (room_id, user_id, content, image_url, timestamp)
-          VALUES ($1, $2, $3, $4, NOW())`,
+           VALUES ($1, $2, $3, $4, NOW())`,
           [roomId, userId, text, imageUrl]
         );
       } else {
         await pool.query(
           `INSERT INTO messages (room_id, content, image_url, timestamp)
-          VALUES ($1, $2, $3, NOW())`,
+           VALUES ($1, $2, $3, NOW())`,
           [roomId, text, imageUrl]
         );
       }
 
-      // Prepare outgoing message object — include imageUrl so clients can render it immediately
       const outMsg = {
         username,
         color,
@@ -473,23 +315,6 @@ io.on("connection", (socket) => {
         roomId
       };
 
-      // 🔹 Only mark private rooms as visited if a logged-in user sent a message
-      if (userId) {
-        try {
-          const roomRes = await pool.query("SELECT is_private FROM rooms WHERE id = $1 LIMIT 1", [roomId]);
-          if (roomRes.rows.length && roomRes.rows[0].is_private) {
-            await pool.query(
-              `INSERT INTO user_private_rooms (user_id, room_id)
-               VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-              [userId, roomId]
-            );
-          }
-        } catch (e) {
-          console.error("Error marking private room visited:", e);
-        }
-      }
-
-      // 🔹 Broadcast the message to everyone in the room
       io.to(roomId.toString()).emit("chat message", outMsg);
     } catch (err) {
       console.error("socket chat message error:", err);
@@ -501,7 +326,8 @@ io.on("connection", (socket) => {
   });
 });
 
-
-// start server
+// --------------------
+// START SERVER
+// --------------------
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on ${PORT}`));
