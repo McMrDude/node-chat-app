@@ -192,7 +192,7 @@ function addMessageToDOM(msgData) {
     img.style.maxWidth = "250px";
     img.style.borderRadius = "8px";
     img.style.marginTop = "6px";
-    img.style.marginleft = "100px";
+    img.style.marginLeft = "100px";
     img.style.boxShadow = "0 0 4px rgba(0,0,0,0.5)"; // fixed parentheses
     li.appendChild(img);
   }
