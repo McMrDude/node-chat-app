@@ -186,13 +186,13 @@ function addMessageToDOM(msgData) {
   if (msgData.imageUrl) {
     const img = document.createElement("img");
     img.src = msgData.imageUrl;
-    img.alt = "semt image";
+    img.alt = "sent image";
     img.loading = "lazy";
     img.style.display = "block";
     img.style.maxWidth = "250px";
     img.style.borderRadius = "8px";
     img.style.marginTop = "6px";
-    img.style.boxShadow = "0 0 4px rgb(0,0,0,0.5";
+    img.style.boxShadow = "0 0 4px rgba(0,0,0,0.5)"; // fixed parentheses
     li.appendChild(img);
   }
 

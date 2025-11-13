@@ -355,12 +355,12 @@ app.get("/api/rooms/:idOrCode", async (req, res) => {
   }
 });
 
-// Room messages history
+// Room messages history (INCLUDES image_url now)
 app.get("/api/messages/:roomId", async (req, res) => {
   const { roomId } = req.params;
   try {
     const q = await pool.query(
-      `SELECT m.id, m.content, m.timestamp, u.username, u.color
+      `SELECT m.id, m.content, m.image_url, m.timestamp, u.username, u.color
        FROM messages m
        LEFT JOIN users u ON m.user_id = u.id
        WHERE m.room_id = $1
@@ -370,6 +370,7 @@ app.get("/api/messages/:roomId", async (req, res) => {
     const messages = q.rows.map(row => ({
       id: row.id,
       text: row.content,
+      imageUrl: row.image_url || null,
       time: row.timestamp ? new Date(row.timestamp).toLocaleTimeString([], { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "",
       username: row.username || "Anonymous",
       color: row.color || "#000000"
@@ -410,7 +411,7 @@ io.on("connection", (socket) => {
   // messages coming from client
   socket.on("chat message", async (msg) => {
     try {
-      // payload: { username, color, text, roomId, (optional) user_id }
+      // payload: { username, color, text, roomId, (optional) user_id, imageUrl }
       const username = (msg.username || "Anonymous").trim();
       const color = msg.color || "#000000";
       const text = msg.text || msg.content || "";
@@ -443,7 +444,7 @@ io.on("connection", (socket) => {
       // extract imageUrl from client if present
       const imageUrl = msg.imageUrl || null;
 
-// Don’t process empty messages or invalid rooms (allow image-only messages)
+      // Don’t process empty messages or invalid rooms (allow image-only messages)
       if (!text && !imageUrl) return;
       if (!roomId) return;
 
