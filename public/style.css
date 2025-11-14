@@ -71,8 +71,16 @@ h1, h2, h3 {
 
 .invite-modal input[type="text"] { width: 100%; padding:6px; margin-bottom:8px; }
 
-#messages { 
-    list-style-type: none; padding: 0; height: 518px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white;
+@media screen and (orientation:landscape) {
+    #messages { 
+        list-style-type: none; padding: 0; height: 518px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white;
+    }
+}
+
+@media screen and (orientation:portrait) {
+    #messages { 
+        list-style-type: none; padding: 0; height: 1518px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white;
+    }
 }
 
 li { margin: 5px 0; }
