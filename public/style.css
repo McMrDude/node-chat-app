@@ -88,7 +88,8 @@ h1, h2, h3 {
         font-size: 20px;
     }
     .img {
-        width: 500px;
+        max-width: 99999;
+        width: 1500px;
         height: auto;
     }
 }
