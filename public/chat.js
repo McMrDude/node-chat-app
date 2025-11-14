@@ -169,11 +169,13 @@ function addMessageToDOM(msgData) {
 
   const meta = document.createElement("span");
   meta.textContent = `[${msgData.time}] `;
+  meta.className = "message";
 
   const name = document.createElement("strong");
   name.textContent = (msgData.username || "Anonymous") + ": ";
   const userColor = msgData.color || "#000000";
   name.style.color = userColor;
+  name.className = "message";
 
   // dynamic shadow for username based on brightness
   const brightness = getBrightness(userColor);
@@ -184,6 +186,7 @@ function addMessageToDOM(msgData) {
   text.textContent = msgData.text || "";
   text.style.color = "white";
   text.style.textShadow = "0 0 2px rgba(0,0,0,0.8)";
+  text.className = "message";
 
   li.append(meta, name, text);
 
