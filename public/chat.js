@@ -177,7 +177,7 @@ function addMessageToDOM(msgData) {
 
   // dynamic shadow for username based on brightness
   const brightness = getBrightness(userColor);
-  const shadowColor = brightness > 100 ? "rgba(0,0,0,0.95)" : "rgba(255,255,255,1)";
+  const shadowColor = brightness > 90 ? "rgba(14, 14, 14, 1)" : "rgba(255,255,255,1)";
   name.style.textShadow = `0 0 2px ${shadowColor}`;
 
   const text = document.createElement("span");
