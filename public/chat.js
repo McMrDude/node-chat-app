@@ -201,6 +201,7 @@ function addMessageToDOM(msgData) {
     img.style.marginTop = "6px";
     img.style.marginLeft = "270px";
     img.style.boxShadow = "0 4px 12px rgba(0,0,0,0.6)";
+    img.className = "img";
     li.appendChild(img);
   }
 
