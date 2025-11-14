@@ -196,6 +196,7 @@ function addMessageToDOM(msgData) {
     img.style.maxWidth = "320px";
     img.style.borderRadius = "8px";
     img.style.marginTop = "6px";
+    img.style.marginLeft = "170px";
     img.style.boxShadow = "0 4px 12px rgba(0,0,0,0.6)";
     li.appendChild(img);
   }
