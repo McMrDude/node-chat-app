@@ -85,10 +85,11 @@ h1, h2, h3 {
         list-style-type: none; padding: 0; height: 80vh; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white;
     }
     .message {
-        font-size: 40px;
+        font-size: 20px;
     }
     .img {
-        max-width: 1320px;
+        width: 500px;
+        height: auto;
     }
 }
 
