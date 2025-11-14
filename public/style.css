@@ -72,7 +72,7 @@ h1, h2, h3 {
 .invite-modal input[type="text"] { width: 100%; padding:6px; margin-bottom:8px; }
 
 #messages { 
-    list-style-type: none; padding: 0; height: 550px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white;
+    list-style-type: none; padding: 0; height: 520px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white;
 }
 
 li { margin: 5px 0; }
