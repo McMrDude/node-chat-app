@@ -103,10 +103,10 @@ h1, h2, h3 {
         min-width: 120px;
     }
     #privateRoomsList div {
-        font-size: 65px;
+        font-size: 35px;
     }
     #rooms div {
-        font-size: 65px;
+        font-size: 35px;
     }
 
     label {
