@@ -91,11 +91,15 @@ h1, h2, h3 {
         font-size: 35px;
     }
     button {
-        padding: 15px;
+        padding: 30px;
     }
     input {
-        height: 100px;
-        width: 500px;
+        height: 80px;
+        width: 400px;
+        font-size: 30px;
+    }
+    #color {
+        width: 100px;
     }
     .message {
         font-size: 35px;
