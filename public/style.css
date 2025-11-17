@@ -88,6 +88,9 @@ h1, h2, h3 {
         font-size: 30px;
     }
     .img {
+        max-width: 9999px;
+        width: 1200;
+        height: auto;
         transform: scale(2);
     }
 }
