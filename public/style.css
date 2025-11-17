@@ -87,12 +87,14 @@ h1, h2, h3 {
     #messages { 
         list-style-type: none; padding: 0; height: 80vh; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white;
     }
+    strong {
+        font-size: 35px;
+    }
     button {
         padding: 15px;
     }
     input {
         height: 45px;
-
     }
     .message {
         font-size: 35px;
