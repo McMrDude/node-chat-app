@@ -87,9 +87,8 @@ h1, h2, h3 {
     #form {
         padding: 5px;
         background-color: #000;
-        position: fixed;
+        position: sticky;
         bottom: 0;
-        left: 0;
         width: 100vw;
     }
     #messages { 
