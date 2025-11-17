@@ -4,6 +4,20 @@ h1, h2, h3 {
     color: white;
 }
 
+#container {
+    display: flex; 
+    height: 100vh; 
+    gap: 10px;
+}
+
+#sidebar {
+    width: 250px; 
+    border-right: 
+    1px solid #ccc; 
+    padding: 10px; 
+    overflow-y: auto;
+}
+
 #privateRoomsList {
     color: white;
 }
@@ -81,6 +95,14 @@ h1, h2, h3 {
 }
 
 @media screen and (orientation:portrait) {
+    #sidebar {
+        flex-basis: 10%;
+    }
+
+    #roomsContainer {
+        flex-basis: 90%;
+    }
+
     #roomTitle {
         font-size: 60px;
     }
