@@ -196,7 +196,6 @@ function addMessageToDOM(msgData) {
     img.alt = "sent image";
     img.loading = "lazy";
     img.style.display = "block";
-    img.style.maxWidth = "320px";
     img.style.borderRadius = "8px";
     img.style.marginTop = "6px";
     img.style.marginLeft = "270px";
