@@ -81,7 +81,7 @@ h1, h2, h3 {
 }
 
 @media screen and (orientation:portrait) {
-    body {
+    #roomTitle {
         font-size: 60px;
     }
     #messages { 
@@ -92,6 +92,10 @@ h1, h2, h3 {
     }
     button {
         padding: 20px;
+        font-size: 25px;
+    }
+    #uploadBtn {
+        padding-inline: 50px;
         font-size: 25px;
     }
     input {
