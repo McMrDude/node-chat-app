@@ -87,8 +87,11 @@ h1, h2, h3 {
     #messages { 
         list-style-type: none; padding: 0; height: 80vh; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white;
     }
+    button {
+        padding: 15px;
+    }
     .message {
-        font-size: 30px;
+        font-size: 35px;
     }
     .img {
         max-width: 640px;
