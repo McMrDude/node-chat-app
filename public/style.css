@@ -88,8 +88,9 @@ h1, h2, h3 {
         padding: 5px;
         background-color: #000;
         position: sticky;
+
         bottom: 0;
-        width: 100vw;
+
     }
     #messages { 
         list-style-type: none; padding: 0; height: 80vh; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white;
