@@ -91,7 +91,8 @@ h1, h2, h3 {
         font-size: 35px;
     }
     button {
-        padding: 30px;
+        padding: 20px;
+        font-size: 25px;
     }
     input {
         height: 80px;
