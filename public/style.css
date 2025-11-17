@@ -75,6 +75,9 @@ h1, h2, h3 {
     #messages { 
         list-style-type: none; padding: 0; height: 518px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white;
     }
+    .img {
+        max-width: 320px;
+    }
 }
 
 @media screen and (orientation:portrait) {
@@ -89,7 +92,7 @@ h1, h2, h3 {
     }
     .img {
         max-width: 9999px;
-        width: 1200;
+        width: 820;
         height: auto;
     }
 }
