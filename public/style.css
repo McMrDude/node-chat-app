@@ -90,6 +90,10 @@ h1, h2, h3 {
     button {
         padding: 15px;
     }
+    input {
+        height: 45px;
+
+    }
     .message {
         font-size: 35px;
     }
