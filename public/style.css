@@ -91,8 +91,7 @@ h1, h2, h3 {
         font-size: 30px;
     }
     .img {
-        max-width: 9999px;
-        width: 820;
+        max-width: 1200;
         height: auto;
     }
 }
