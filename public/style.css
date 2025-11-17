@@ -94,7 +94,8 @@ h1, h2, h3 {
         padding: 15px;
     }
     input {
-        height: 45px;
+        height: 100px;
+        width: 500px;
     }
     .message {
         font-size: 35px;
