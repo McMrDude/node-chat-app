@@ -116,7 +116,7 @@ label {
     }
     #sidebar {
         position: fixed;
-        top: -160px;          /* hidden above screen */
+        top: -260px;          /* hidden above screen */
         left: 0;
         width: 100%;
         height: -120px;
@@ -146,13 +146,12 @@ label {
         left: 80%;
         transform: translateX(-50%);
         padding: 6px 20px;
-        border-radius: 8px;
         font-size: 24px;
         z-index: 10000;
         transition: top 0.35s ease-in-out;
     }
     #toggleBar.open {
-        top: 120px;       /* moves down with bar */
+        top: 220px;       /* moves down with bar */
     }
     #privateRoomsList {
         display: flex;
