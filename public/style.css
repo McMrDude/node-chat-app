@@ -191,6 +191,7 @@ label {
     font-size: 45px;
     margin-top: 20px;
     color: white;
+    border: 1px red solid;
     }
 
     #roomTitle {
