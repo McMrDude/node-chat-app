@@ -55,12 +55,6 @@ label {
     background-color: #444444;
 }
 
-#pagination { 
-    font-size: 45px;
-    margin-top: 20px;
-    color: white;
-}
-
 .page-btn { 
     margin: 0 5px; 
     cursor: pointer; 
@@ -98,6 +92,10 @@ label {
         border-right: 1px solid #ccc; 
         padding: 10px; 
         overflow-y: auto;
+    }
+    #pagination { 
+    margin-top: 20px;
+    color: white;
     }
 
     #messages { 
@@ -137,9 +135,20 @@ label {
         gap: 10px;
         font-size: 30px;
     }
+    #pagination { 
+    font-size: 45px;
+    margin-top: 20px;
+    color: white;
+    }
 
     #roomTitle {
         font-size: 60px;
+    }
+    #bigForm {
+        border: black 10px solid;
+        background-color: #434343;
+        position: sticky;
+        top: 0;
     }
     #form {
         padding: 5px;
