@@ -115,6 +115,14 @@ label {
     #sidebar {
         display: flex;
         flex-direction: column;
+        position:fixed;
+        background: linear-gradient(
+            to top,
+            black 0%,
+            #3c3c3c 20%,
+            #3c3c3c 80%,
+            black 100%
+        );
         flex-wrap: nowrap;
         width: 100%;
         overflow-x: auto;
