@@ -4,6 +4,14 @@ const paginationDiv = document.getElementById('pagination');
 const roomNameInput = document.getElementById('roomName');
 const isPrivateInput = document.getElementById('isPrivate');
 const createBtn = document.getElementById('createBtn');
+const bar = document.getElementById("sidebar");
+const btn = document.getElementById("toggleBar");
+
+btn.onclick = () => {
+  bar.classList.toggle("open");
+  btn.classList.toggle("open");
+  btn.textContent = bar.classList.contains("open") ? "▲" : "▼";
+};
 
 let currentPage = 1;
 let totalPages = 1;

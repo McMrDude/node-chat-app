@@ -12,11 +12,6 @@ label {
     color: white;
 }
 
-#privateRoomsList div {
-    background-color: #696969;
-    transition: 0.3s;
-}
-
 #privateRoomsList div:hover {
     transform: scale(1.02);
     background-color: #595959;
@@ -92,6 +87,13 @@ label {
         padding: 10px; 
         overflow-y: auto;
     }
+    #privateRoomsList div {
+    background-color: #696969;
+    transition: 0.3s;
+    }
+    #toggleBar {
+        display: none;
+    }
     #pagination { 
     margin-top: 20px;
     color: white;
@@ -113,28 +115,55 @@ label {
     gap: 10px;
     }
     #sidebar {
+        position: fixed;
+        top: -160px;          /* hidden above screen */
+        left: 0;
+        width: 100%;
+        height: -120px;
+        background: linear-gradient(to bottom, #111, #3c3c3c);
+        padding: 10px;
+        box-sizing: border-box;
+        transition: top 0.35s ease-in-out;
+        z-index: 9999;
         display: flex;
         flex-direction: column;
-        position:fixed;
-        background: linear-gradient(
-            to top,
-            black 0%,
-            #3c3c3c 20%,
-            #3c3c3c 80%,
-            black 100%
-        );
-        flex-wrap: nowrap;
-        width: 100%;
-        overflow-x: auto;
-        overflow-y: hidden;
         align-items: center;
-        padding: env(safe-area-inset-top) 8px 0 8px;  /* <-- THIS is the fix */
-        box-sizing: border-box;
-        flex-shrink: 0;
+    }
+    #sidebar.open {
+        top: 0;
+    }
+    #privateRoomsList div {
+        flex: 0 0 auto;
+        padding: 12px 18px;
+        background: #696969;
+        border-radius: 8px;
+        font-size: 24px;
+        transition: 0.3s;
+    }
+    #toggleBar {
+        position: fixed;
+        top: 0;
+        left: 80%;
+        transform: translateX(-50%);
+        padding: 6px 20px;
+        border-radius: 8px;
+        font-size: 24px;
+        z-index: 10000;
+        transition: top 0.35s ease-in-out;
+    }
+    #toggleBar.open {
+        top: 120px;       /* moves down with bar */
     }
     #privateRoomsList {
         display: flex;
         flex-direction: row;
+        gap: 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        width: 100%;
+        padding: 6px;
+        scrollbar-width: thin;
     }
     #privateRoomsList div {
         font-size: 35px;
