@@ -39,7 +39,7 @@ label {
 .room { padding: 10px; border: 1px solid #ccc; cursor: pointer; text-align: center; min-height: 48px; display:flex; align-items:center; justify-content:center; }
 
 #rooms div {
-    width: 66%;
+    width: 75%;
     height: 75%;
     background-color: #696969;
     transition: 0.3s;
@@ -134,7 +134,7 @@ label {
         display: flex;
         align-items: center;
         gap: 10px;
-        font-size: 35px;
+        font-size: 30px;
     }
 
     #roomTitle {
