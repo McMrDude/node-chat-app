@@ -30,13 +30,13 @@ label {
     border: 1px solid blue; 
     height: 70vh; 
     background-color: #5b5b5b;
-    justify-self: center;
-    align-self: center;
 }
 
 .room { padding: 10px; border: 1px solid #ccc; cursor: pointer; text-align: center; min-height: 48px; display:flex; align-items:center; justify-content:center; }
 
 #rooms div {
+    justify-self: center;
+    align-self: center;
     width: 75%;
     height: 75%;
     background-color: #696969;
