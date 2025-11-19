@@ -213,7 +213,7 @@ label {
     #chatContainer {
         display: flex;
         flex-direction: column;
-        height: 80vh;
+        height: 90vh;
     }
     #chatTop {
         flex: 0 0 20%;
