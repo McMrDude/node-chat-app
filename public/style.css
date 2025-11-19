@@ -213,10 +213,10 @@ label {
     #chatContainer {
         display: flex;
         flex-direction: column;
-        height: 100vh;
+        height: 97vh;
     }
     #chatTop {
-        flex: 0 0 10%;
+        flex: 0 0 20%;
     }
     #roomTitle {
         font-size: 60px;
@@ -235,7 +235,7 @@ label {
         margin-bottom: 10px; 
         background-color: #696969; 
         color: white;
-        flex: 0 0 90%;
+        flex: 0 0 80%;
     }
     strong {
         font-size: 35px;
