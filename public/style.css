@@ -27,7 +27,7 @@ label {
     grid-template-columns: repeat(3, 0.5fr); 
     margin-top: 12px; 
     color: white; 
-    border: 1px solid blue; 
+    border: 3px solid rgb(212, 212, 212); 
     height: 70vh; 
     background-color: #5b5b5b;
     padding: 10px;
