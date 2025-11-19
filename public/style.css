@@ -147,6 +147,19 @@ label {
     #sidebar.open {
         top: 0;
     }
+    #privateRoomsList {
+        background-color: #5e5e5e;
+        display: flex;
+        flex-direction: row;
+        gap: 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        width: 100%;
+        padding: 6px;
+        scrollbar-width: thin;
+        border-radius: 10px;
+    }
     #privateRoomsList div {
         flex: 0 0 auto;
         padding: 12px 18px;
@@ -154,6 +167,7 @@ label {
         border-radius: 8px;
         font-size: 24px;
         transition: 0.3s;
+        font-size: 35px;
     }
     #toggleBar {
         position: fixed;
@@ -167,20 +181,6 @@ label {
     }
     #toggleBar.open {
         top: 220px;       /* moves down with bar */
-    }
-    #privateRoomsList {
-        display: flex;
-        flex-direction: row;
-        gap: 12px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        white-space: nowrap;
-        width: 100%;
-        padding: 6px;
-        scrollbar-width: thin;
-    }
-    #privateRoomsList div {
-        font-size: 35px;
     }
     #rooms div {
         font-size: 35px;
