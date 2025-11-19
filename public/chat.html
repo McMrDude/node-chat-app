@@ -6,20 +6,24 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2 id="roomTitle" style="color: white;">Chat Room</h2>
+  <div id="chatContainer">
+    <div id="chatTop">
+      <h2 id="roomTitle" style="color: white;">Chat Room</h2>
 
-  <div id="inviteLinkContainer" style="margin-bottom: 10px;"></div>
+      <div id="inviteLinkContainer" style="margin-bottom: 10px;"></div>
 
 
-  <div id="userRow">
-    <input id="username" placeholder="Your name" />
-    <input id="color" type="color" value="#000000" />
-    <button id="updateIdentity">Update</button>
+      <div id="userRow">
+        <input id="username" placeholder="Your name" />
+        <input id="color" type="color" value="#000000" />
+        <button id="updateIdentity">Update</button>
+      </div>
+
+      <button id="deleteRoomBtn" style="position:absolute; top:20px; right:20px;">Delete Room</button>
+    </div>
+
+    <ul id="messages"></ul>
   </div>
-
-  <button id="deleteRoomBtn" style="position:absolute; top:20px; right:20px;">Delete Room</button>
-
-  <ul id="messages"></ul>
 
   <form id="form">
     <button type="button" id="uploadBtn">+</button>

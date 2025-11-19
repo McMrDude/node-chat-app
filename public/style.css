@@ -30,7 +30,7 @@ label {
     border: 3px solid rgb(212, 212, 212); 
     height: 70vh; 
     background-color: #5b5b5b;
-    background-image: radial-gradient(#5b5b5b, #5b5b5b, #5b5b5b, rgb(59, 59, 59));
+    background-image: radial-gradient(#5b5b5b, #5b5b5b, rgb(59, 59, 59));
     padding: 10px;
 }
 
@@ -211,6 +211,14 @@ label {
     border: 1px red solid;
     }
 
+    #chatContainer {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+    #chatTop {
+        flex-basis: 20%;
+    }
     #roomTitle {
         font-size: 60px;
     }
@@ -221,7 +229,14 @@ label {
         bottom: 0;
     }
     #messages { 
-        list-style-type: none; padding: 0; height: 80vh; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white;
+        list-style-type: none; 
+        padding: 0; height: 80vh; 
+        overflow-y: auto; 
+        border: 1px solid #ccc; 
+        margin-bottom: 10px; 
+        background-color: #696969; 
+        color: white;
+        flex-basis: auto;
     }
     strong {
         font-size: 35px;
