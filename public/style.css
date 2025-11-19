@@ -216,7 +216,7 @@ label {
         height: 100vh;
     }
     #chatTop {
-        flex: 0 0 50%;
+        flex: 0 0 20%;
     }
     #roomTitle {
         font-size: 60px;
@@ -229,13 +229,13 @@ label {
     }
     #messages { 
         list-style-type: none; 
-        padding: 0; height: 80vh; 
+        padding: 0;
         overflow-y: auto; 
         border: 1px solid #ccc; 
         margin-bottom: 10px; 
         background-color: #696969; 
         color: white;
-        flex: 0 0 50%;
+        flex: 0 0 80%;
     }
     strong {
         font-size: 35px;
