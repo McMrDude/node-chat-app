@@ -30,6 +30,7 @@ label {
     border: 3px solid rgb(212, 212, 212); 
     height: 70vh; 
     background-color: #5b5b5b;
+    background-image: radial-gradient(#5b5b5b, #5b5b5b, #5b5b5b, rgb(59, 59, 59));
     padding: 10px;
 }
 
