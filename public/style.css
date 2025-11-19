@@ -27,8 +27,8 @@ label {
 .room { padding: 10px; border: 1px solid #ccc; cursor: pointer; text-align: center; min-height: 48px; display:flex; align-items:center; justify-content:center; }
 
 #rooms div {
-    width: 75%;
-    height: 75%;
+    width: 100%;
+    height: 100%;
     background-color: #696969;
     transition: 0.3s;
 }
