@@ -1,8 +1,9 @@
 body { font-family: Arial, sans-serif; margin: 0px; background-color: #434343;}
 
-h1, h2, h3 {
-    color: white;
+h1, h2, h3, a {
+    color: white;   
 }
+
 
 label {
     color: white;
@@ -87,6 +88,10 @@ label {
 .invite-modal input[type="text"] { width: 100%; padding:6px; margin-bottom:8px; }
 
 @media screen and (orientation:landscape) {
+    a {
+        font-size: 30px;
+        text-decoration: none;
+    }
     #container {
         display: flex; 
         flex-direction: row;
@@ -112,7 +117,6 @@ label {
     margin-top: 15px;
     color: white;
     }
-
     #messages { 
         list-style-type: none; padding: 0; height: 518px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white;
     }
@@ -190,7 +194,7 @@ label {
     h3 {
         font-size: 40px;
     }
-    h2 {
+    a {
         font-size: 50px;
     }
     #isPrivate {
@@ -213,7 +217,7 @@ label {
     #chatContainer {
         display: flex;
         flex-direction: column;
-        height: 87vh;
+        height: 80vh;
     }
     #chatTop {
         flex: 0 0 20%;
