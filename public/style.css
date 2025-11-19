@@ -159,6 +159,7 @@ label {
         padding: 6px;
         scrollbar-width: thin;
         border-radius: 10px;
+        align-items: center;
     }
     #privateRoomsList div {
         flex: 0 0 auto;
