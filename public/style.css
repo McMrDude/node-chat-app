@@ -1,4 +1,4 @@
-body { font-family: Arial, sans-serif; margin: 20px; background-color: #434343;}
+body { font-family: Arial, sans-serif; margin: 0px; background-color: #434343;}
 
 h1, h2, h3 {
     color: white;
@@ -82,6 +82,7 @@ label {
     gap: 10px;
     }
     #sidebar {
+        height: 100vh;
         width: 250px; 
         border-right: 1px solid #ccc; 
         padding: 10px; 
