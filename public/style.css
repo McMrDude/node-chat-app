@@ -216,7 +216,7 @@ label {
         height: 100vh;
     }
     #chatTop {
-        flex: 0 0 20%;
+        flex: 0 0 10%;
     }
     #roomTitle {
         font-size: 60px;
@@ -235,7 +235,7 @@ label {
         margin-bottom: 10px; 
         background-color: #696969; 
         color: white;
-        flex: 0 0 80%;
+        flex: 0 0 90%;
     }
     strong {
         font-size: 35px;
