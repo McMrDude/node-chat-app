@@ -76,13 +76,13 @@ label {
 
 @media screen and (orientation:landscape) {
     #container {
-    display: flex; 
-    flex-direction: row;
-    height: 100vh; 
-    gap: 10px;
+        display: flex; 
+        flex-direction: row;
+        height: 100vh; 
+        gap: 10px;
     }
     #sidebar {
-        height: 100vh;
+        height: 97vh;
         width: 250px; 
         border-right: 1px solid #ccc; 
         padding: 10px; 
@@ -90,8 +90,8 @@ label {
         background-color: #252525;
     }
     #privateRoomsList div {
-    background-color: #696969;
-    transition: 0.3s;
+        background-color: #696969;
+        transition: 0.3s;
     }
     #toggleBar {
         display: none;
