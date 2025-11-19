@@ -22,7 +22,17 @@ label {
     background-color: #444444;
 }
 
-#rooms { display: grid; grid-template-columns: repeat(3, 0.5fr); margin-top: 12px; color: white; border: 1px solid blue; height: 70vh; background-color: #5b5b5b;}
+#rooms { 
+    display: grid; 
+    grid-template-columns: repeat(3, 0.5fr); 
+    margin-top: 12px; 
+    color: white; 
+    border: 1px solid blue; 
+    height: 70vh; 
+    background-color: #5b5b5b;
+    justify-self: center;
+    align-self: center;
+}
 
 .room { padding: 10px; border: 1px solid #ccc; cursor: pointer; text-align: center; min-height: 48px; display:flex; align-items:center; justify-content:center; }
 
