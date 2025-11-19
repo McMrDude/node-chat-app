@@ -197,7 +197,6 @@ label {
         height: 55px;
         width: 55px;
     }
-
     #createForm label {
         display: flex;
         align-items: center;
@@ -205,10 +204,10 @@ label {
         font-size: 30px;
     }
     #pagination { 
-    font-size: 45px;
-    margin-top: 20px;
-    color: white;
-    border: 1px red solid;
+        font-size: 45px;
+        margin-top: 20px;
+        color: white;
+        border: 1px red solid;
     }
 
     #chatContainer {
@@ -217,7 +216,7 @@ label {
         height: 100vh;
     }
     #chatTop {
-        flex-basis: 20%;
+        flex: 0 0 50%;
     }
     #roomTitle {
         font-size: 60px;
@@ -236,7 +235,7 @@ label {
         margin-bottom: 10px; 
         background-color: #696969; 
         color: white;
-        flex-basis: auto;
+        flex: 0 0 50%;
     }
     strong {
         font-size: 35px;
