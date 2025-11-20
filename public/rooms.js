@@ -276,6 +276,7 @@ async function updateAuthUI() {
         loginBtn.onclick = async () => {
             await fetch("/api/logout", { method: "POST" });
             updateAuthUI(); // Refresh UI after logging out
+            window.location.reload();
         };
     } else {
         // No server session
