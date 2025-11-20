@@ -250,3 +250,40 @@ async function loadVisitedPrivateRooms() {
   await loadRooms(1);
   await loadVisitedPrivateRooms();
 })();
+
+function updateAuthUI() {
+    const username = localStorage.getItem("username");
+    const loginBtn = document.getElementById("loginBtn");
+    const registerBtn = document.getElementById("registerBtn");
+    const status = document.getElementById("loginStatus");
+
+    if (username) {
+        // User is logged in
+        status.textContent = "Logged in as: " + username;
+
+        // Change Login → Logout
+        loginBtn.textContent = "Logout";
+        loginBtn.onclick = () => {
+            localStorage.removeItem("username");
+            updateAuthUI(); // refresh UI
+        };
+
+        // Keep Register hidden or shown? Your choice:
+        registerBtn.style.display = "none";
+    } else {
+        // User is NOT logged in
+        status.textContent = "You are not logged in or don't have an account yet";
+
+        // Reset login button
+        loginBtn.textContent = "Login";
+        loginBtn.onclick = () => {
+            window.location.href = "/login.html";
+        };
+
+        // Show register button again
+        registerBtn.style.display = "inline-block";
+    }
+}
+
+// Run once on page load
+updateAuthUI();
