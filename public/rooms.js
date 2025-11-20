@@ -251,36 +251,39 @@ async function loadVisitedPrivateRooms() {
   await loadVisitedPrivateRooms();
 })();
 
-function updateAuthUI() {
-    const username = localStorage.getItem("username");
+async function updateAuthUI() {
+    const status = document.getElementById("loginStatus");
     const loginBtn = document.getElementById("loginBtn");
     const registerBtn = document.getElementById("registerBtn");
-    const status = document.getElementById("loginStatus");
 
-    if (username) {
-        // User is logged in
-        status.textContent = "Logged in as: " + username;
+    // Check real login state from server
+    let user = null;
+    try {
+        const res = await fetch("/api/me");
+        const data = await res.json();
+        if (data.success) user = data.user;
+    } catch (err) {
+        console.error("Failed to check /api/me:", err);
+    }
 
-        // Change Login → Logout
+    if (user) {
+        // User is truly logged in (server confirmed)
+        status.textContent = "Logged in as: " + user.username;
+
         loginBtn.textContent = "Logout";
-        loginBtn.onclick = () => {
-            localStorage.removeItem("username");
-            updateAuthUI(); // refresh UI
-        };
-
-        // Keep Register hidden or shown? Your choice:
         registerBtn.style.display = "none";
+
+        loginBtn.onclick = async () => {
+            await fetch("/api/logout", { method: "POST" });
+            updateAuthUI(); // Refresh UI after logging out
+        };
     } else {
-        // User is NOT logged in
+        // No server session
         status.textContent = "You are not logged in or don't have an account yet";
 
-        // Reset login button
         loginBtn.textContent = "Login";
-        loginBtn.onclick = () => {
-            window.location.href = "/login.html";
-        };
+        loginBtn.onclick = () => window.location.href = "/login.html";
 
-        // Show register button again
         registerBtn.style.display = "inline-block";
     }
 }
