@@ -246,7 +246,7 @@ label {
         padding: 5px;
         background-color: #000;
         position: sticky;
-        bottom: 0;
+        bottom: 0px;
     }
     #messages { 
         list-style-type: none; 
