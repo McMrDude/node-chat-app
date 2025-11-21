@@ -4,6 +4,11 @@ h1, h2, h3, a, p {
     color: white;   
 }
 
+#loginStatus {
+    color:white; 
+    margin-top:8px; 
+    font-size:18px;
+}
 
 label {
     color: white;
@@ -190,6 +195,12 @@ label {
     }
     #rooms div {
         font-size: 35px;
+    }
+    #loginStatus {
+        font-size: 36px;
+    }
+    h2 {
+        font-size: 48px;
     }
     h3 {
         font-size: 40px;
