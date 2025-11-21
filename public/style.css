@@ -193,6 +193,9 @@ label {
     #toggleBar.open {
         top: 220px;       /* moves down with bar */
     }
+    #rooms {
+        height: 65vh;
+    }
     #rooms div {
         font-size: 35px;
     }
