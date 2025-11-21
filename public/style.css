@@ -136,15 +136,9 @@ label {
 }
 
 @media screen and (orientation:portrait) {
-    #container {
-    display: flex; 
-    flex-direction: column;
-    height: 100vh; 
-    gap: 10px;
-    }
     #roomsContainer {
         border: purple 1px solid;
-        height: 40vh;
+        height: 1px;
     }
     #sidebar {
         position: fixed;
