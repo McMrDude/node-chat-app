@@ -10,6 +10,11 @@ h1, h2, h3, a, p {
     font-size:18px;
 }
 
+#roomsContainer {
+    flex: 1; 
+    padding: 10px;
+}
+
 label {
     color: white;
 }
@@ -136,6 +141,10 @@ label {
     flex-direction: column;
     height: 100vh; 
     gap: 10px;
+    }
+    #roomsContainer {
+        border: purple 1px solid;
+        height: 70vh;
     }
     #sidebar {
         position: fixed;
