@@ -144,7 +144,7 @@ label {
     }
     #roomsContainer {
         border: purple 1px solid;
-        height: 70vh;
+        height: 40vh;
     }
     #sidebar {
         position: fixed;
