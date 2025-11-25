@@ -48,8 +48,12 @@ searchForm.addEventListener('submit', function(event) {
   event.preventDefault();
 
   for (let i = 0; i > roomsDiv.children; i++) {
-    if (search.innerHTML.toLowerCase != roomsDiv.children[i]); {
+    console.log("And this part works!");
+    if (search.innerHTML.toLowerCase != roomsDiv.children[i]) {
+      console.log("HOLY SHIT, THIS ONE TOO!?");
       roomsDiv.children[i].style.display = "none";
+    } else {
+      console.log("well, this on does not work ):");
     };
   };
 });
