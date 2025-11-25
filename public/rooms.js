@@ -52,11 +52,11 @@ searchForm.addEventListener('submit', function(event) {
   childTextArray = Array.from(childText);
 
 
-  console.log(childElementArray)
+  console.log(childTextArray)
 
   for (let i = 0; i > childElementArray; i++) {
     console.log("And this part works!");
-    if (search.innerHTML.toLowerCase != childElementArray[i]) {
+    if (search.innerHTML.toLowerCase != childElementArray[i].toLowerCase()) {
       console.log("HOLY SHIT, THIS ONE TOO!?");
       childElementArray[i].style.display = "none";
     } else {
