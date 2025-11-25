@@ -47,11 +47,17 @@ searchForm.addEventListener('submit', function(event) {
   console.log("The event is listening");
   event.preventDefault();
 
-  for (let i = 0; i > roomsDiv.children; i++) {
+  childElements = roomsDiv.children;
+
+  childElementArray = Array.from(childElements);
+
+  console.log(childElementArray)
+
+  for (let i = 0; i > childElementArray; i++) {
     console.log("And this part works!");
-    if (search.innerHTML.toLowerCase != roomsDiv.children[i]) {
+    if (search.innerHTML.toLowerCase != childElementArray[i]) {
       console.log("HOLY SHIT, THIS ONE TOO!?");
-      roomsDiv.children[i].style.display = "none";
+      childElementArray[i].style.display = "none";
     } else {
       console.log("well, this on does not work ):");
     };
