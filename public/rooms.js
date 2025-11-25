@@ -43,11 +43,13 @@ async function tabCheck() {
 };
 tabCheck();
 
-for (let i = 0; i < roomsDiv.children; i++) {
-  if (search.innerHTML.toLowerCase != roomsDiv.children[i]); {
-    roomsDiv.children[i].style.display = "none";
+search.addEventListener('input', function() {
+  for (let i = 0; i < roomsDiv.children; i++) {
+    if (search.innerHTML.toLowerCase != roomsDiv.children[i]); {
+      roomsDiv.children[i].style.display = "none";
+    };
   };
-};
+});
 
 let currentPage = 1;
 let totalPages = 1;
