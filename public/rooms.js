@@ -23,6 +23,10 @@ createTab.onclick = () => {
   searchTab.classList.remove("open");
   createForm.style.display = "flex";
   searchForm.style.display = "none";
+
+  childElements = roomsDiv.children;
+  childElementArray = Array.from(childElements);
+  childElementArray[i].style.display = "inline";
 };
 searchTab.onclick = () => {
   searchTab.classList.add("open");
@@ -61,7 +65,7 @@ searchForm.addEventListener('submit', function(event) {
     childElementArray[i].style.display = "inline";
     console.log(search.value.toLowerCase());
     console.log(childElementArray[i].innerHTML.toLowerCase());
-    if (search.value.toLowerCase() != childElementArray[i].innerHTML.toLowerCase()) {
+    if (search.value.toLowerCase() != childElementArray[i].innerHTML.slice(0, search.value.length).toLowerCase()) {
       childElementArray[i].style.display = "none";
     };
   };
