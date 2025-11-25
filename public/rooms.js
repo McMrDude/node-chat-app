@@ -55,9 +55,8 @@ searchForm.addEventListener('submit', function(event) {
 
 
   for (let i = 0; i < childElementArray.length; i++) {
-    console.log("And this part works!");
     if (search.innerHTML.toLowerCase() != childElementArray[i].innerHTML.toLowerCase()) {
-      console.log("HOLY SHIT, THIS ONE TOO!?");
+      console.log(childElementArray[i].innerHTML.toLowerCase());
       childElementArray[i].style.display = "none";
     } else {
       console.log("well, this on does not work ):");
