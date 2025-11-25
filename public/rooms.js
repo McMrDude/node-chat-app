@@ -48,8 +48,9 @@ searchForm.addEventListener('submit', function(event) {
   event.preventDefault();
 
   childElements = roomsDiv.children;
+  childText = childElements.innerHTML;
+  childTextArray = Array.from(childText);
 
-  childElementArray = Array.from(childElements);
 
   console.log(childElementArray)
 
