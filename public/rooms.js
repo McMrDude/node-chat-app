@@ -48,15 +48,14 @@ searchForm.addEventListener('submit', function(event) {
   event.preventDefault();
 
   childElements = roomsDiv.children;
-  childText = childElements.innerHTML;
-  childTextArray = Array.from(childText);
+  childElementArray = Array.from(childElements);
 
 
-  console.log(childTextArray)
+  console.log(childElementArray.innerHTML);
 
   for (let i = 0; i > childElementArray; i++) {
     console.log("And this part works!");
-    if (search.innerHTML.toLowerCase != childElementArray[i].toLowerCase()) {
+    if (search.innerHTML.toLowerCase() != childElementArray[i].innerHTML.toLowerCase()) {
       console.log("HOLY SHIT, THIS ONE TOO!?");
       childElementArray[i].style.display = "none";
     } else {
