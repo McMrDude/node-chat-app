@@ -46,7 +46,7 @@ tabCheck();
 searchForm.addEventListener('submit', function(event) {
   event.preventDefault();
 
-  for (let i = 0; i > roomsDiv.children; i++) {
+  for (let i = 0; i < roomsDiv.children; i++) {
     if (search.innerHTML.toLowerCase != roomsDiv.children[i]); {
       roomsDiv.children[i].style.display = "none";
     };
