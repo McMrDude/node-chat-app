@@ -71,7 +71,42 @@ label {
     cursor: pointer; 
 }
 
-#createForm { 
+#createTab {
+    margin-left: 10px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    transition: 0.1s;
+}
+#createTab.open {
+    transform: scale(1.05);
+    background-color: #ccc;
+    box-shadow: 0 0 5px;
+}
+#searchTab {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    transition: 0.1s;
+}
+#searchTab.open {
+    transform: scale(1.05);
+    background-color: #ccc;
+    box-shadow: 0 0 5px;
+}
+#createForm {
+    background-color: #434343;
+    padding: 5px;
+    border: 3px white solid;
+    border-radius: 10px;
+    margin-bottom: 12px; 
+    display:flex; gap:8px; 
+    align-items:center;
+    display: none;
+}
+#searchForm {
+    background-color: #434343;
+    padding: 5px;
+    border: 3px white solid;
+    border-radius: 10px;
     margin-bottom: 12px; 
     display:flex; gap:8px; 
     align-items:center;
@@ -124,8 +159,8 @@ label {
         display: none;
     }
     #pagination { 
-    margin-top: 15px;
-    color: white;
+        margin-top: 15px;
+        color: white;
     }
     #messages { 
         list-style-type: none; padding: 0; height: 518px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white;
@@ -136,10 +171,6 @@ label {
 }
 
 @media screen and (orientation:portrait) {
-    #roomsContainer {
-        border: purple 1px solid;
-        height: 1px;
-    }
     #sidebar {
         position: fixed;
         top: -260px;          /* hidden above screen */
@@ -192,6 +223,8 @@ label {
         z-index: 10000;
         transition: top 0.35s ease-in-out;
         box-shadow: 0px 10px 10px rgb(0, 0, 0);
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
     }
     #toggleBar.open {
         top: 220px;       /* moves down with bar */

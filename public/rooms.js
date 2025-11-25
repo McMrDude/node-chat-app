@@ -6,12 +6,41 @@ const isPrivateInput = document.getElementById('isPrivate');
 const createBtn = document.getElementById('createBtn');
 const bar = document.getElementById("sidebar");
 const btn = document.getElementById("toggleBar");
+const createTab = document.getElementById("createTab");
+const searchTab = document.getElementById("searchTab");
+const createForm = document.getElementById("createForm");
+const searchForm = document.getElementById("searchForm");
 
 btn.onclick = () => {
   bar.classList.toggle("open");
   btn.classList.toggle("open");
   btn.textContent = bar.classList.contains("open") ? "▲" : "▼";
 };
+
+createTab.onclick = () => {
+  createTab.classList.add("open");
+  searchTab.classList.remove("open");
+  createForm.style.display = "flex";
+  searchForm.style.display = "none";
+};
+searchTab.onclick = () => {
+  searchTab.classList.add("open");
+  createTab.classList.remove("open");
+  createForm.style.display = "none";
+  searchForm.style.display = "flex";
+};
+
+async function tabCheck() {
+  if (createForm.style.display !== "none") {
+    createTab.classList.add("open");
+    searchTab.classList.remove("open");
+  };
+  if (searchForm.style.display !== "none") {
+    searchTab.classList.add("open");
+    createTab.classList.remove("open");
+  };
+};
+tabCheck();
 
 let currentPage = 1;
 let totalPages = 1;
