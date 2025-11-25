@@ -44,8 +44,11 @@ async function tabCheck() {
 tabCheck();
 
 searchForm.addEventListener('submit', function(event) {
+
   console.log("The event is listening");
   event.preventDefault();
+
+
 
   childElements = roomsDiv.children;
   childElementArray = Array.from(childElements);
@@ -55,6 +58,7 @@ searchForm.addEventListener('submit', function(event) {
 
 
   for (let i = 0; i < childElementArray.length; i++) {
+    childElementArray[i].style.display = "inline";
     console.log(search.value.toLowerCase());
     console.log(childElementArray[i].innerHTML.toLowerCase());
     if (search.value.toLowerCase() != childElementArray[i].innerHTML.toLowerCase()) {
