@@ -44,6 +44,7 @@ async function tabCheck() {
 tabCheck();
 
 searchForm.addEventListener('submit', function(event) {
+  console.log("The event is listening");
   event.preventDefault();
 
   for (let i = 0; i < roomsDiv.children; i++) {
