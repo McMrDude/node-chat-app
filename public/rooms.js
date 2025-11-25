@@ -55,11 +55,10 @@ searchForm.addEventListener('submit', function(event) {
 
 
   for (let i = 0; i < childElementArray.length; i++) {
+    console.log(search.innerHTML.toLowerCase());
+    console.log(childElementArray[i].innerHTML.toLowerCase());
     if (search.innerHTML.toLowerCase() != childElementArray[i].innerHTML.toLowerCase()) {
-      console.log(childElementArray[i].innerHTML.toLowerCase());
       childElementArray[i].style.display = "none";
-    } else {
-      console.log("well, this on does not work ):");
     };
   };
 });
