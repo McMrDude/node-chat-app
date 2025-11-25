@@ -55,9 +55,9 @@ searchForm.addEventListener('submit', function(event) {
 
 
   for (let i = 0; i < childElementArray.length; i++) {
-    console.log(search.innerHTML.toLowerCase());
+    console.log(search.value.toLowerCase());
     console.log(childElementArray[i].innerHTML.toLowerCase());
-    if (search.innerHTML.toLowerCase() != childElementArray[i].innerHTML.toLowerCase()) {
+    if (search.value.toLowerCase() != childElementArray[i].innerHTML.toLowerCase()) {
       childElementArray[i].style.display = "none";
     };
   };
