@@ -10,6 +10,7 @@ const createTab = document.getElementById("createTab");
 const searchTab = document.getElementById("searchTab");
 const createForm = document.getElementById("createForm");
 const searchForm = document.getElementById("searchForm");
+const search = document.getElementById("searchBar");
 
 btn.onclick = () => {
   bar.classList.toggle("open");
@@ -41,6 +42,12 @@ async function tabCheck() {
   };
 };
 tabCheck();
+
+for (let i = 0; i < roomsDiv.children; i++) {
+  if (search.innerHTML.toLowerCase != roomsDiv.children[i]); {
+    roomsDiv.children[i].style.display = "none";
+  };
+};
 
 let currentPage = 1;
 let totalPages = 1;
