@@ -47,7 +47,7 @@ async function tabCheck() {
 };
 tabCheck();
 
-function searchCheck() {
+searchForm.addEventListener("submit", function(event) {
 
   console.log("The event is listening");
   event.preventDefault();
@@ -69,8 +69,7 @@ function searchCheck() {
       childElementArray[i].style.display = "none";
     };
   };
-};
-setInterval(searchCheck(), 100);
+});
 
 let currentPage = 1;
 let totalPages = 1;
