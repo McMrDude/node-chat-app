@@ -351,4 +351,4 @@ async function updateAuthUI() {
 // Run once on page load
 updateAuthUI();
 
-setInterval(searchCheck(), 100);
+setInterval(searchCheck, 100);
