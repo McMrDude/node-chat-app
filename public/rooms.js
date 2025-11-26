@@ -11,7 +11,6 @@ const searchTab = document.getElementById("searchTab");
 const createForm = document.getElementById("createForm");
 const searchForm = document.getElementById("searchForm");
 const search = document.getElementById("searchBar");
-const submit = document.getElementById("submit");
 
 btn.onclick = () => {
   bar.classList.toggle("open");
@@ -48,12 +47,10 @@ async function tabCheck() {
 };
 tabCheck();
 
-function searchCheck() {
-  submit.submit();
+searchForm.addEventListener("input", function(event) {
   
 
   console.log("The event is listening");
-  event.preventDefault();
 
 
 
@@ -68,11 +65,11 @@ function searchCheck() {
     childElementArray[i].style.display = "inline";
     console.log(search.value.toLowerCase());
     console.log(childElementArray[i].innerHTML.toLowerCase());
-    if (search.value.toLowerCase() != childElementArray[i].innerHTML.slice(0, search.value.length).toLowerCase()) {
+    if (search.value.toLowerCase() != childElementArray[i].textContent.slice(0, search.value.length).toLowerCase()) {
       childElementArray[i].style.display = "none";
     };
   };
-};
+});
 
 
 let currentPage = 1;
@@ -353,5 +350,3 @@ async function updateAuthUI() {
 
 // Run once on page load
 updateAuthUI();
-
-setInterval(searchCheck, 100);
