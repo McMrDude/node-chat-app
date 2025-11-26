@@ -70,7 +70,7 @@ function searchCheck() {
     };
   };
 };
-setInterval(searchCheck(), 100)
+setInterval(searchCheck(), 100);
 
 let currentPage = 1;
 let totalPages = 1;
