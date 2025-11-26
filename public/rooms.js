@@ -47,7 +47,7 @@ async function tabCheck() {
 };
 tabCheck();
 
-searchForm.addEventListener("submit", function(event) {
+function searchCheck() {
 
   console.log("The event is listening");
   event.preventDefault();
@@ -69,7 +69,8 @@ searchForm.addEventListener("submit", function(event) {
       childElementArray[i].style.display = "none";
     };
   };
-});
+};
+
 
 let currentPage = 1;
 let totalPages = 1;
@@ -349,3 +350,5 @@ async function updateAuthUI() {
 
 // Run once on page load
 updateAuthUI();
+
+setInterval(searchCheck(), 100);
