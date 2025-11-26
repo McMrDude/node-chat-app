@@ -338,6 +338,21 @@ app.get("/api/rooms/:idOrCode", async (req, res) => {
   }
 });
 
+app.get("/api/rooms-all", async (req, res) => {
+  try {
+    const roomsRes = await pool.query(
+      `SELECT id, name, is_private, invite_code, created_at
+       FROM rooms
+       WHERE is_private = FALSE
+       ORDER BY created_at DESC`
+    );
+    res.json({ success: true, rooms: roomsRes.rows });
+  } catch (err) {
+    console.error("rooms-all fetch error:", err);
+    res.status(500).json({ success: false, error: "db error" });
+  }
+});
+
 // messages with image_url support
 app.get("/api/messages/:roomId", async (req, res) => {
   const { roomId } = req.params;

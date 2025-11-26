@@ -12,6 +12,9 @@ const createForm = document.getElementById("createForm");
 const searchForm = document.getElementById("searchForm");
 const search = document.getElementById("searchBar");
 
+let allRooms = [];
+let allRoomsLoaded = false;
+
 btn.onclick = () => {
   bar.classList.toggle("open");
   btn.classList.toggle("open");
@@ -28,11 +31,23 @@ createTab.onclick = () => {
   childElementArray = Array.from(childElements);
   childElementArray[i].style.display = "inline";
 };
-searchTab.onclick = () => {
+searchTab.onclick = async () => {
   searchTab.classList.add("open");
   createTab.classList.remove("open");
   createForm.style.display = "none";
   searchForm.style.display = "flex";
+
+  // Load ALL rooms once
+  if (!allRoomsLoaded) {
+    const res = await fetch("/api/rooms-all");
+    const data = await res.json();
+    if (data.success) {
+      allRooms = data.rooms;
+      allRoomsLoaded = true;
+    }
+  }
+
+  renderSearchResults("");
 };
 
 async function tabCheck() {
@@ -47,30 +62,31 @@ async function tabCheck() {
 };
 tabCheck();
 
-searchForm.addEventListener("input", function(event) {
-  
-
-  console.log("The event is listening");
-
-
-
-  childElements = roomsDiv.children;
-  childElementArray = Array.from(childElements);
-
-
-  console.log(childElementArray.length);
-
-
-  for (let i = 0; i < childElementArray.length; i++) {
-    childElementArray[i].style.display = "inline";
-    console.log(search.value.toLowerCase());
-    console.log(childElementArray[i].innerHTML.toLowerCase());
-    if (search.value.toLowerCase() != childElementArray[i].textContent.slice(0, search.value.length).toLowerCase()) {
-      childElementArray[i].style.display = "none";
-    };
-  };
+searchForm.addEventListener("input", function () {
+  renderSearchResults(search.value.toLowerCase());
 });
 
+function renderSearchResults(query) {
+  roomsDiv.innerHTML = "";
+  paginationDiv.innerHTML = ""; // hide pagination during search
+
+  const results = allRooms.filter(r =>
+    r.name.toLowerCase().startsWith(query)
+  );
+
+  if (results.length === 0) {
+    roomsDiv.textContent = "No rooms found.";
+    return;
+  }
+
+  results.forEach(room => {
+    const div = document.createElement("div");
+    div.className = "room";
+    div.textContent = room.name;
+    div.onclick = () => visitRoom(room.id);
+    roomsDiv.appendChild(div);
+  });
+}
 
 let currentPage = 1;
 let totalPages = 1;
