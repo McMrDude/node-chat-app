@@ -11,6 +11,7 @@ const searchTab = document.getElementById("searchTab");
 const createForm = document.getElementById("createForm");
 const searchForm = document.getElementById("searchForm");
 const search = document.getElementById("searchBar");
+const submit = document.getElementById("submit");
 
 btn.onclick = () => {
   bar.classList.toggle("open");
@@ -48,6 +49,8 @@ async function tabCheck() {
 tabCheck();
 
 function searchCheck() {
+  submit.submit();
+  
 
   console.log("The event is listening");
   event.preventDefault();
