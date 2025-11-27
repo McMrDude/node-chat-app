@@ -17,12 +17,14 @@
 
     <!-- Main content: public rooms -->
     <div id="roomsContainer">
-      <h2>Public Chat Rooms</h2>
+      <div style="border: green solid; display: flex; align-items: center;">
+        <h2>Public Chat Rooms</h2>
 
-      <div id="authButtons" style="border: 1px blue solid; margin-bottom: 12px; display: flex;">
-        <button id="loginBtn" style="margin-right: 5px;">Login</button>
-        <button id="registerBtn" onclick="window.location.href='/register.html'">Register</button>
-        <div id="loginStatus"></div>
+        <div id="authButtons" style="border: 1px blue solid; display: flex; flex-wrap: wrap; width: 50%; margin-left: auto;">
+          <button id="loginBtn" style="margin-left: auto; margin-right: 5px; padding: 10px;">Login</button>
+          <button id="registerBtn" onclick="window.location.href='/register.html'">Register</button>
+          <div id="loginStatus"></div>
+        </div>
       </div>
 
       <div>
