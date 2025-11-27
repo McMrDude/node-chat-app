@@ -1,4 +1,6 @@
 // public/rooms.js
+// Reworked to support live search across all pages while keeping paginated view when search is empty.
+
 const roomsDiv = document.getElementById('rooms');
 const paginationDiv = document.getElementById('pagination');
 const roomNameInput = document.getElementById('roomName');
@@ -10,26 +12,34 @@ const createTab = document.getElementById("createTab");
 const searchTab = document.getElementById("searchTab");
 const createForm = document.getElementById("createForm");
 const searchForm = document.getElementById("searchForm");
-const search = document.getElementById("searchBar");
+const searchInput = document.getElementById("searchBar"); // the actual text input
 
-let allRooms = [];
+let allRooms = [];             // cached list of all public rooms (populated via /api/rooms-all)
 let allRoomsLoaded = false;
+let currentSearch = "";        // current search text
+const roomsPerPage = 12;
 
+let currentPage = 1;
+let totalPages = 1;
+let currentUser = null; // will be {id, username, color, visitedPrivateRooms} or null
+
+// Toggle sidebar/topbar button
 btn.onclick = () => {
   bar.classList.toggle("open");
   btn.classList.toggle("open");
   btn.textContent = bar.classList.contains("open") ? "▲" : "▼";
 };
 
+// Tabs
 createTab.onclick = () => {
   createTab.classList.add("open");
   searchTab.classList.remove("open");
   createForm.style.display = "flex";
   searchForm.style.display = "none";
-
-  childElements = roomsDiv.children;
-  childElementArray = Array.from(childElements);
-  childElementArray[i].style.display = "inline";
+  // Reset search
+  currentSearch = "";
+  searchInput.value = "";
+  loadRooms(1);
 };
 searchTab.onclick = async () => {
   searchTab.classList.add("open");
@@ -37,42 +47,96 @@ searchTab.onclick = async () => {
   createForm.style.display = "none";
   searchForm.style.display = "flex";
 
-  // Load ALL rooms once
+  // Load ALL rooms once (for search across pages)
   if (!allRoomsLoaded) {
-    const res = await fetch("/api/rooms-all");
-    const data = await res.json();
-    if (data.success) {
-      allRooms = data.rooms;
+    try {
+      const res = await fetch("/api/rooms-all");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.rooms)) {
+        allRooms = data.rooms;
+        allRoomsLoaded = true;
+      } else {
+        allRooms = [];
+        allRoomsLoaded = true; // avoid refetch loops
+      }
+    } catch (err) {
+      console.error("Failed to load all rooms for search:", err);
+      allRooms = [];
       allRoomsLoaded = true;
     }
   }
 
-  renderSearchResults("");
+  // If there's already text in the search box, render results immediately
+  if (searchInput.value.trim() !== "") {
+    currentSearch = searchInput.value.trim().toLowerCase();
+    renderSearchResults(currentSearch);
+  } else {
+    // If no search text, show first page of normal paginated view
+    loadRooms(1);
+  }
 };
 
-async function tabCheck() {
+// Keep UI tab state correct on load
+function tabCheck() {
   if (createForm.style.display !== "none") {
     createTab.classList.add("open");
     searchTab.classList.remove("open");
-  };
+  }
   if (searchForm.style.display !== "none") {
     searchTab.classList.add("open");
     createTab.classList.remove("open");
-  };
-};
+  }
+}
 tabCheck();
 
-searchForm.addEventListener("input", function () {
-  renderSearchResults(search.value.toLowerCase());
+// Listen on the actual text input for live updates
+searchInput.addEventListener("input", async (evt) => {
+  const q = (evt.target.value || "").trim().toLowerCase();
+  currentSearch = q;
+
+  if (q === "") {
+    // empty search -> go back to normal paginated view
+    // ensure pagination visible
+    await loadRooms(1);
+    return;
+  }
+
+  // ensure allRooms is loaded
+  if (!allRoomsLoaded) {
+    try {
+      const res = await fetch("/api/rooms-all");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.rooms)) {
+        allRooms = data.rooms;
+      } else {
+        allRooms = [];
+      }
+    } catch (err) {
+      console.error("Failed to fetch all rooms for search:", err);
+      allRooms = [];
+    }
+    allRoomsLoaded = true;
+  }
+
+  // render results for query
+  renderSearchResults(q);
 });
 
+// Render search results (no pagination when searching)
 function renderSearchResults(query) {
   roomsDiv.innerHTML = "";
   paginationDiv.innerHTML = ""; // hide pagination during search
 
-  const results = allRooms.filter(r =>
-    r.name.toLowerCase().startsWith(query)
-  );
+  if (!query) {
+    roomsDiv.textContent = "Type to search rooms.";
+    return;
+  }
+
+  // startsWith behaviour, case-insensitive
+  const results = allRooms.filter(r => {
+    if (!r || typeof r.name !== "string") return false;
+    return r.name.toLowerCase().startsWith(query);
+  });
 
   if (results.length === 0) {
     roomsDiv.textContent = "No rooms found.";
@@ -88,11 +152,7 @@ function renderSearchResults(query) {
   });
 }
 
-let currentPage = 1;
-let totalPages = 1;
-let currentUser = null; // will be {id, username, color, visitedPrivateRooms} or null
-
-// Get authenticated user (server returns visitedPrivateRooms for logged-in users)
+// Fetch user session (as before)
 async function fetchMe() {
   try {
     const res = await fetch('/api/me');
@@ -104,7 +164,15 @@ async function fetchMe() {
   }
 }
 
+// Normal paginated loader
 async function loadRooms(page = 1) {
+  // if user currently has a search query, ignore paginated load
+  if (currentSearch && currentSearch.length > 0) {
+    // user is actively searching — render search results instead of fetching pages
+    renderSearchResults(currentSearch);
+    return;
+  }
+
   currentPage = page;
   try {
     const res = await fetch(`/api/rooms?page=${page}`);
@@ -116,7 +184,6 @@ async function loadRooms(page = 1) {
     } else {
       data.rooms.forEach((room) => {
         const div = document.createElement('div');
-        div.id = 'publicRoom';
         div.className = 'room';
         div.textContent = room.name;
         div.onclick = () => visitRoom(room.id);
@@ -125,7 +192,7 @@ async function loadRooms(page = 1) {
     }
 
     totalPages = data.totalPages || 1;
-    currentPage = data.currentPage || 1;
+    currentPage = data.currentPage || page;
     renderPagination();
   } catch (err) {
     console.error('Error loading rooms:', err);
@@ -133,6 +200,7 @@ async function loadRooms(page = 1) {
   }
 }
 
+// Pagination renderer (only shown in normal mode)
 function renderPagination() {
   paginationDiv.innerHTML = '';
   if (totalPages <= 1) return;
@@ -163,6 +231,7 @@ function renderPagination() {
   if (currentPage < totalPages) paginationDiv.appendChild(makeBtn('>>', totalPages));
 }
 
+// create room handler (unchanged)
 createBtn.addEventListener('click', async () => {
   const name = roomNameInput.value.trim();
   const isPrivate = isPrivateInput.checked;
@@ -188,8 +257,6 @@ createBtn.addEventListener('click', async () => {
     if (room.is_private) {
       const inviteLink = `${window.location.origin}/chat.html?invite=${encodeURIComponent(room.invite_code)}`;
       showInviteModal(inviteLink);
-      // If user is logged in, ensure the server saved it already (server side is handling it)
-      // For anonymous users, we also save locally
       if (!currentUser) {
         addRoomToLocalVisited(room.id);
         loadVisitedPrivateRooms();
@@ -235,7 +302,7 @@ function showInviteModal(inviteLink) {
   });
 }
 
-// Add a roomId to localStorage visited list (anonymous users)
+// local visited
 function addRoomToLocalVisited(roomId) {
   try {
     const arr = JSON.parse(localStorage.getItem("visitedPrivateRooms") || "[]");
@@ -248,39 +315,31 @@ function addRoomToLocalVisited(roomId) {
   }
 }
 
-// Visit room: server returns visitedPrivateRooms when logged-in and private
+// visit room (unchanged)
 async function visitRoom(roomId) {
   try {
     const res = await fetch(`/api/rooms/${roomId}`);
     const data = await res.json();
     if (!data.success || !data.room) {
-      // fallback: still navigate
       window.location.href = `/chat.html?roomId=${roomId}`;
       return;
     }
-
-    // If user is logged-in, backend may return visitedPrivateRooms; update currentUser
     if (data.visitedPrivateRooms && currentUser) {
       currentUser.visitedPrivateRooms = data.visitedPrivateRooms;
     } else if (!currentUser) {
-      // anonymous -> store locally (only if room is private)
       if (data.room && data.room.is_private) {
         addRoomToLocalVisited(data.room.id);
       }
     }
-
-    // Refresh sidebar now
     loadVisitedPrivateRooms();
-
-    // navigate to chat
     window.location.href = `/chat.html?roomId=${roomId}`;
   } catch (err) {
     console.error('Error visiting room:', err);
-    window.location.href = `/chat.html?roomId=${roomId}`; // ensure navigation even on error
+    window.location.href = `/chat.html?roomId=${roomId}`;
   }
 }
 
-// Render sidebar list using server-side list if logged in, otherwise localStorage
+// visited private rooms rendering (unchanged)
 async function loadVisitedPrivateRooms() {
   const list = document.getElementById('privateRoomsList');
   if (!list) return;
@@ -288,7 +347,7 @@ async function loadVisitedPrivateRooms() {
 
   let visited = [];
   if (currentUser && Array.isArray(currentUser.visitedPrivateRooms)) {
-    visited = currentUser.visitedPrivateRooms.slice(); // copy
+    visited = currentUser.visitedPrivateRooms.slice();
   } else {
     visited = JSON.parse(localStorage.getItem("visitedPrivateRooms") || "[]");
   }
@@ -298,8 +357,7 @@ async function loadVisitedPrivateRooms() {
     return;
   }
 
-  // populate with room names (fetch each)
-  list.innerHTML = ''; // clear
+  list.innerHTML = '';
   for (const rid of visited) {
     try {
       const rres = await fetch(`/api/rooms/${rid}`);
@@ -326,12 +384,12 @@ async function loadVisitedPrivateRooms() {
   await loadVisitedPrivateRooms();
 })();
 
+// auth UI update (unchanged except use server to confirm)
 async function updateAuthUI() {
     const status = document.getElementById("loginStatus");
     const loginBtn = document.getElementById("loginBtn");
     const registerBtn = document.getElementById("registerBtn");
 
-    // Check real login state from server
     let user = null;
     try {
         const res = await fetch("/api/me");
@@ -342,27 +400,21 @@ async function updateAuthUI() {
     }
 
     if (user) {
-        // User is truly logged in (server confirmed)
         status.textContent = "Logged in as: " + user.username;
-
         loginBtn.textContent = "Logout";
         registerBtn.style.display = "none";
-
         loginBtn.onclick = async () => {
             await fetch("/api/logout", { method: "POST" });
-            updateAuthUI(); // Refresh UI after logging out
+            updateAuthUI();
             window.location.reload();
         };
     } else {
-        // No server session
         status.textContent = "You are not logged in or don't have an account yet";
-
         loginBtn.textContent = "Login";
         loginBtn.onclick = () => window.location.href = "/login.html";
-
         registerBtn.style.display = "inline-block";
     }
 }
 
-// Run once on page load
+// Run once on page load to set auth UI
 updateAuthUI();

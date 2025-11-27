@@ -31,7 +31,6 @@ app.use(express.static(path.join(__dirname, "public")));
 // --------------------
 // Supabase (file uploads)
 // --------------------
-// BUCKET: img_links (you said this is your bucket)
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
@@ -64,9 +63,6 @@ function verifyToken(token) {
   }
 }
 
-/**
- * Safe helper to read current user from request cookies (returns null if not authenticated)
- */
 async function getUserFromRequest(req) {
   try {
     const raw = req.headers.cookie;
@@ -146,7 +142,6 @@ app.post("/api/logout", (req, res) => {
   res.json({ success: true });
 });
 
-// update username/color for authenticated user
 app.post("/api/update-identity", async (req, res) => {
   try {
     const user = await getUserFromRequest(req);
@@ -177,7 +172,6 @@ app.post("/api/upload", upload.single("image"), async (req, res) => {
     }
 
     const ext = (req.file.originalname.split(".").pop() || "jpg").toLowerCase();
-    // create a stable path (images/<timestamp>-random.<ext>)
     const fileName = `images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
@@ -189,15 +183,12 @@ app.post("/api/upload", upload.single("image"), async (req, res) => {
       throw uploadError;
     }
 
-    // get public URL (this returns an object; older/newer SDKs differ)
-    // This code works for both typical v1/v2 SDK responses
     const { data: pub, error: pubErr } = supabase.storage.from(process.env.SUPABASE_BUCKET || "img_links").getPublicUrl(fileName);
     if (pubErr) {
       console.error("Supabase getPublicUrl error:", pubErr);
       return res.status(500).json({ success: false, error: "could not get public url" });
     }
 
-    // pub.publicURL or pub.publicUrl depending on SDK; normalize
     const publicUrl = pub?.publicURL || pub?.publicUrl || pub?.url || null;
     if (!publicUrl) {
       console.warn("Public URL missing from supabase response, returning path instead.");
@@ -338,6 +329,9 @@ app.get("/api/rooms/:idOrCode", async (req, res) => {
   }
 });
 
+// --------------------
+// NEW: return ALL public rooms (used for client-side searching across pages)
+// --------------------
 app.get("/api/rooms-all", async (req, res) => {
   try {
     const roomsRes = await pool.query(
@@ -353,7 +347,9 @@ app.get("/api/rooms-all", async (req, res) => {
   }
 });
 
+// --------------------
 // messages with image_url support
+// --------------------
 app.get("/api/messages/:roomId", async (req, res) => {
   const { roomId } = req.params;
   try {
@@ -395,7 +391,7 @@ app.delete("/api/rooms/:id", async (req, res) => {
 });
 
 // --------------------
-// SOCKET.IO CHAT
+// SOCKET.IO CHAT (unchanged)
 // --------------------
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);
@@ -408,14 +404,12 @@ io.on("connection", (socket) => {
 
   socket.on("chat message", async (msg) => {
     try {
-      // payload: { username, color, text, roomId, user_id (optional), imageUrl (optional) }
       const usernameFromClient = (msg.username || "Anonymous").trim();
       const colorFromClient = msg.color || "#000000";
       const text = msg.text || msg.content || "";
       const roomId = msg.roomId || msg.room_id || msg.room;
       let userId = msg.user_id || null;
 
-      // Try token from handshake cookies if user_id not provided
       if (!userId && socket.handshake?.headers?.cookie) {
         try {
           const parsed = cookie.parse(socket.handshake.headers.cookie || "");
@@ -424,12 +418,9 @@ io.on("connection", (socket) => {
             const payload = verifyToken(token);
             if (payload && payload.id) userId = payload.id;
           }
-        } catch (e) {
-          // ignore
-        }
+        } catch (e) {}
       }
 
-      // validate userId exists in users table; if missing, treat as anonymous
       let dbUser = null;
       if (userId) {
         try {
@@ -447,12 +438,9 @@ io.on("connection", (socket) => {
       }
 
       const imageUrl = msg.imageUrl || null;
-
-      // allow image-only messages
       if (!text && !imageUrl) return;
       if (!roomId) return;
 
-      // Insert: include image_url column (DB must have it; you said it does)
       if (userId) {
         await pool.query(
           `INSERT INTO messages (room_id, user_id, content, image_url, timestamp)
@@ -460,7 +448,6 @@ io.on("connection", (socket) => {
           [roomId, userId, text, imageUrl]
         );
       } else {
-        // anonymous message — do not set user_id
         await pool.query(
           `INSERT INTO messages (room_id, content, image_url, timestamp)
            VALUES ($1, $2, $3, NOW())`,
@@ -468,7 +455,6 @@ io.on("connection", (socket) => {
         );
       }
 
-      // Prepare outgoing message — prefer DB username/color for logged in user
       const outUsername = dbUser ? dbUser.username : usernameFromClient;
       const outColor = dbUser ? dbUser.color : colorFromClient;
 
@@ -481,7 +467,6 @@ io.on("connection", (socket) => {
         roomId
       };
 
-      // If logged in user sent message and it's a private room, mark visited
       if (userId) {
         try {
           const roomRes = await pool.query("SELECT is_private FROM rooms WHERE id = $1 LIMIT 1", [roomId]);
