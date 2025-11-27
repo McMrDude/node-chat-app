@@ -10,6 +10,7 @@ h1, h2, h3, a, p {
     font-size:18px;
     flex-basis: 100%;
     justify-content: flex-end;
+    margin-top: 5px;
 }
 
 #roomsContainer {
