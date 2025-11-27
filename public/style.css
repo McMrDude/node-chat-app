@@ -5,10 +5,12 @@ h1, h2, h3, a, p {
 }
 
 #loginStatus {
+    display: flex;
+    border: red solid;
     color:white; 
     font-size:18px;
-    margin-left: 3px;
-    margin-left: auto;
+    flex-basis: 100%;
+    justify-content: flex-end;
 }
 
 #roomsContainer {
