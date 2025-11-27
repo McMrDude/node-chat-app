@@ -409,7 +409,7 @@ async function updateAuthUI() {
             window.location.reload();
         };
     } else {
-        status.textContent = "You are not logged in or don't have an account yet";
+        status.textContent = ": You are not logged in or don't have an account yet";
         loginBtn.textContent = "Login";
         loginBtn.onclick = () => window.location.href = "/login.html";
         registerBtn.style.display = "inline-block";
