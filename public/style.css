@@ -79,6 +79,9 @@ label {
     border-top-right-radius: 10px;
     transition: 0.1s;
 }
+#createTab:hover {
+    background-color: #dadada;
+}
 #createTab.open {
     transform: scale(1.05);
     background-color: #ccc;
@@ -88,6 +91,9 @@ label {
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
     transition: 0.1s;
+}
+#searchTab:hover {
+    background-color: #dadada;
 }
 #searchTab.open {
     transform: scale(1.05);

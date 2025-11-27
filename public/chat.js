@@ -136,39 +136,61 @@ if (uploadBtn && imageInput) {
 }
 
 // paste handling (image or link)
-input.addEventListener("paste", (event) => {
-  const items = event.clipboardData && event.clipboardData.items;
-  if (!items) return;
-  for (let item of items) {
-    if (item.type && item.type.startsWith("image/")) {
-      attachedImageFile = item.getAsFile();
-      alert("Attached image from clipboard.");
+if (input) {
+  input.addEventListener("paste", (event) => {
+    const items = event.clipboardData && event.clipboardData.items;
+    if (!items) return;
+    for (let item of items) {
+      if (item.type && item.type.startsWith("image/")) {
+        attachedImageFile = item.getAsFile();
+        alert("Attached image from clipboard.");
+        event.preventDefault();
+        return;
+      }
+    }
+    // if pasted text looks like an image URL, auto-send it (or attach it as imageUrl)
+    const text = event.clipboardData.getData("text");
+    if (text && text.match(/\.(jpeg|jpg|png|gif|webp)(\?.*)?$/i)) {
+      // send immediately as image-only message
+      socket.emit("chat message", {
+        username: (usernameInput && usernameInput.value.trim()) || (currentUser ? currentUser.username : "Anonymous"),
+        color: (colorInput && colorInput.value) || (currentUser ? currentUser.color : "#000000"),
+        text: "",
+        imageUrl: text,
+        roomId,
+        user_id: currentUser ? currentUser.id : null
+      });
       event.preventDefault();
-      return;
+    }
+  });
+}
+
+// helper: format incoming timestamp to local timezone
+function formatTimestamp(ts) {
+  if (!ts) return "";
+  // If it looks like an ISO timestamp (very common: starts with YYYY-)
+  const isoLike = typeof ts === "string" && /^\d{4}-\d{2}-\d{2}T/.test(ts);
+  if (isoLike) {
+    try {
+      const d = new Date(ts); // ISO parsed as UTC
+      const opts = { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" };
+      // Use user's locale; this will convert to local timezone automatically
+      return d.toLocaleString(undefined, opts);
+    } catch (e) {
+      return ts;
     }
   }
-  // if pasted text looks like an image URL, auto-send it (or attach it as imageUrl)
-  const text = event.clipboardData.getData("text");
-  if (text && text.match(/\.(jpeg|jpg|png|gif|webp)(\?.*)?$/i)) {
-    // send immediately as image-only message
-    socket.emit("chat message", {
-      username: (usernameInput && usernameInput.value.trim()) || (currentUser ? currentUser.username : "Anonymous"),
-      color: (colorInput && colorInput.value) || (currentUser ? currentUser.color : "#000000"),
-      text: "",
-      imageUrl: text,
-      roomId,
-      user_id: currentUser ? currentUser.id : null
-    });
-    event.preventDefault();
-  }
-});
+  // If it's not ISO, assume it's already a formatted string and return as-is
+  return ts;
+}
 
 // add message DOM
 function addMessageToDOM(msgData) {
   const li = document.createElement("li");
 
   const meta = document.createElement("span");
-  meta.textContent = `[${msgData.time}] `;
+  // accept either ISO string or preformatted string from server
+  meta.textContent = `[${formatTimestamp(msgData.time)}] `;
   meta.className = "message";
 
   const name = document.createElement("strong");
@@ -228,6 +250,7 @@ async function loadHistory() {
     const data = await res.json();
     if (!data.success) return;
     messagesUL.innerHTML = "";
+    // data.messages[].time is expected to be ISO string from server now
     data.messages.forEach(m => addMessageToDOM(m));
   } catch (err) {
     console.error("Error fetching messages:", err);
@@ -281,6 +304,7 @@ async function loadRoomName() {
 
   // receive messages
   socket.on("chat message", (msg) => {
+    // server now sends msg.time as ISO string (UTC). formatTimestamp will convert it.
     addMessageToDOM(msg);
   });
 

@@ -365,7 +365,7 @@ app.get("/api/messages/:roomId", async (req, res) => {
       id: row.id,
       text: row.content,
       imageUrl: row.image_url || null,
-      time: row.timestamp ? new Date(row.timestamp).toLocaleTimeString([], { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "",
+      time: row.timestamp ? new Date(row.timestamp).toISOString() : "",
       username: row.username || "Anonymous",
       color: row.color || "#000000"
     }));
@@ -459,13 +459,13 @@ io.on("connection", (socket) => {
       const outColor = dbUser ? dbUser.color : colorFromClient;
 
       const outMsg = {
-        username: outUsername,
-        color: outColor,
-        text,
-        imageUrl,
-        time: new Date().toLocaleTimeString([], { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
-        roomId
-      };
+  username: outUsername,
+  color: outColor,
+  text,
+  imageUrl,
+  time: new Date().toISOString(), // send UTC ISO string
+  roomId
+};
 
       if (userId) {
         try {
