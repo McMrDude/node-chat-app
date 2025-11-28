@@ -171,7 +171,14 @@ label {
         color: white;
     }
     #messages { 
-        list-style-type: none; padding: 0; height: 518px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; background-color: #696969; color: white;
+        list-style-type: none; 
+        padding: 0; 
+        height: 73vh; 
+        overflow-y: auto; 
+        border: 1px solid #ccc; 
+        margin-bottom: 10px; 
+        background-color: #696969; 
+        color: white;
     }
     .img {
         max-width: 320px;
