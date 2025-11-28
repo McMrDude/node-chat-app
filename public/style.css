@@ -173,7 +173,7 @@ label {
     #messages { 
         list-style-type: none; 
         padding: 0; 
-        height: 73vh; 
+        height: 518px; 
         overflow-y: auto; 
         border: 1px solid #ccc; 
         margin-bottom: 10px; 
