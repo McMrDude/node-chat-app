@@ -171,7 +171,6 @@ label {
         color: white;
     }
     #messages { 
-        scrollbar-color: #696969;
         list-style-type: none; 
         padding: 0; 
         height: 518px; 
@@ -180,6 +179,7 @@ label {
         margin-bottom: 10px; 
         background-color: #696969; 
         color: white;
+        scrollbar-color: blue red;
     }
     .img {
         max-width: 320px;
