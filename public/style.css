@@ -179,7 +179,7 @@ label {
         margin-bottom: 10px; 
         background-color: #696969; 
         color: white;
-        scrollbar-color: auto #696969;
+        scrollbar-color: #868686 #696969;
     }
     .img {
         max-width: 320px;
