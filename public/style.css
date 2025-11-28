@@ -171,6 +171,7 @@ label {
         color: white;
     }
     #messages { 
+        scrollbar-color: #696969;
         list-style-type: none; 
         padding: 0; 
         height: 518px; 
