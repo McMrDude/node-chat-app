@@ -168,20 +168,16 @@ if (input) {
 // helper: format incoming timestamp to local timezone
 function formatTimestamp(ts) {
   if (!ts) return "";
-  // If it looks like an ISO timestamp (very common: starts with YYYY-)
-  const isoLike = typeof ts === "string" && /^\d{4}-\d{2}-\d{2}T/.test(ts);
-  if (isoLike) {
-    try {
-      const d = new Date(ts); // ISO parsed as UTC
-      const opts = { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" };
-      // Use user's locale; this will convert to local timezone automatically
-      return d.toLocaleString(undefined, opts);
-    } catch (e) {
-      return ts;
-    }
-  }
-  // If it's not ISO, assume it's already a formatted string and return as-is
-  return ts;
+
+  const d = new Date(ts);
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0"); // 24h clock
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+
+  return `${year}/${month}/${day} ${hours}:${minutes}`;
 }
 
 // add message DOM
